@@ -36,7 +36,11 @@ button, input, select, textarea{font:inherit; color:inherit;}
 button{cursor:pointer;}
 :focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px; border-radius:4px;}
 
-.shell{max-width:960px; margin-inline:auto; padding-inline:20px; padding-block:22px 60px; display:flex; flex-direction:column; gap:18px;}
+.shell{max-width:960px; margin-inline:auto; display:flex; flex-direction:column; gap:18px;
+  padding-inline:max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px));
+  padding-block:calc(22px + env(safe-area-inset-top, 0px)) calc(60px + env(safe-area-inset-bottom, 0px));}
+/* flex 子元素預設 min-width:auto 不會收縮，橫向滑動的看板會把整頁撐寬 */
+.shell > *{min-width:0;}
 
 /* header */
 header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px;}
@@ -141,9 +145,39 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .toast[hidden]{display:none;}
 
 @media (max-width:719px){
-  .board{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:0; margin-inline:-20px; padding-inline:20px;}
+  .shell{gap:14px;
+    padding-inline:max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+    padding-block:calc(16px + env(safe-area-inset-top, 0px)) calc(40px + env(safe-area-inset-bottom, 0px));}
+
+  header{gap:10px; align-items:center;}
+  .brand h1{font-size:22px; gap:6px;}
+  .brand h1 .bell{width:18px; height:18px;}
+  .brand .eyebrow{font-size:10px;}
+  .brand .today{font-size:11.5px;}
+  .userchip{font-size:11px; padding:5px 10px; gap:5px;}
+  .userchip #userEmail{max-width:34vw;}
+  .userchip .logout{padding-left:6px;}
+
+  /* 四張統計卡改成 2×2，不再被擠成細長條 */
+  .stats{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .stat{min-width:0; padding:9px 12px;}
+  .stat .n{font-size:19px;}
+
+  .btn-today{width:100%; justify-content:center; padding:12px 18px;}
+
+  /* 看板橫向滑動，左右負邊距要跟著 shell 的手機版間距 */
+  .board{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:0; margin-inline:-16px; padding-inline:16px;}
   .column{flex:0 0 100%; scroll-snap-align:start; margin-right:16px;}
-  .tabs{display:flex; position:sticky; top:0; z-index:5;}
+  /* sticky 的分頁列要停在安全區下方，不然會躲到瀏海後面 */
+  .tabs{display:flex; position:sticky; top:env(safe-area-inset-top, 0px); z-index:5;}
+}
+
+/* 更窄的機型（iPhone SE 等）再收一階 */
+@media (max-width:389px){
+  .brand h1{font-size:19px;}
+  .stat{padding:8px 10px;}
+  .stat .l{font-size:10.5px;}
+  .userchip #userEmail{max-width:28vw;}
 }
 
 /* ---------- 登入者 ---------- */
