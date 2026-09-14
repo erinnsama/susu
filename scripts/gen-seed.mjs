@@ -39,14 +39,14 @@ let lines = [];
 projects.forEach((p, i) => {
   const ts = new Date(base + i * 1000).toISOString();
   lines.push(
-    `INSERT INTO projects (id, name, color, archived, created_at, updated_at) VALUES ('${esc(p.id)}', '${esc(p.name)}', '${esc(p.color)}', ${p.archived}, '${ts}', '${ts}');`
+    `INSERT OR IGNORE INTO projects (id, name, color, archived, created_at, updated_at) VALUES ('${esc(p.id)}', '${esc(p.name)}', '${esc(p.color)}', ${p.archived}, '${ts}', '${ts}');`
   );
 });
 
 tasks.forEach((t, i) => {
   const ts = new Date(base + (i + 1) * 1000).toISOString();
   lines.push(
-    `INSERT INTO tasks (id, title, project_id, status, due_date, priority, notes, created_at, updated_at) VALUES ('${esc(t.id)}', '${esc(t.title)}', 'emo-blast', '${esc(t.status)}', NULL, '${esc(t.priority)}', '${esc(t.notes)}', '${ts}', '${ts}');`
+    `INSERT OR IGNORE INTO tasks (id, title, project_id, status, due_date, priority, notes, created_at, updated_at) VALUES ('${esc(t.id)}', '${esc(t.title)}', 'emo-blast', '${esc(t.status)}', NULL, '${esc(t.priority)}', '${esc(t.notes)}', '${ts}', '${ts}');`
   );
 });
 

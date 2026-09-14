@@ -1,4 +1,4 @@
-import { api } from "./api.js";
+import { api, ApiError } from "./api.js";
 
 var PALETTE = ["#DE5D83","#3E7FC4","#3F9A5D","#E0A23E","#8B7CC0","#3EA8A0","#C1432E","#8C93A6"];
 var STATUSES = ["todo","doing","done"];
@@ -49,13 +49,27 @@ async function loadAll(){
   render();
 }
 
+function handleError(err){
+  if(err instanceof ApiError && (err.status===401 || err.status===403)){
+    toast(err.message + "，正在帶妳回登入頁…");
+    setTimeout(function(){ location.reload(); }, 1800);
+    return;
+  }
+  toast(err && err.message ? err.message : "操作失敗，請再試一次");
+}
+
+// 每個寫入動作都吃掉例外並跳提示，否則失敗時畫面完全沒反應，會以為是當掉
+function run(promise){
+  return promise.then(loadAll).catch(function(err){ handleError(err); });
+}
+
 var store = {
-  addProject: function(data){ return api.addProject(data).then(loadAll); },
-  updateProject: function(id, patch){ return api.updateProject(id, patch).then(loadAll); },
-  deleteProject: function(id){ return api.deleteProject(id).then(loadAll); },
-  addTask: function(data){ return api.addTask(data).then(loadAll); },
-  updateTask: function(id, patch){ return api.updateTask(id, patch).then(loadAll); },
-  deleteTask: function(id){ return api.deleteTask(id).then(loadAll); }
+  addProject: function(data){ return run(api.addProject(data)); },
+  updateProject: function(id, patch){ return run(api.updateProject(id, patch)); },
+  deleteProject: function(id){ return run(api.deleteProject(id)); },
+  addTask: function(data){ return run(api.addTask(data)); },
+  updateTask: function(id, patch){ return run(api.updateTask(id, patch)); },
+  deleteTask: function(id){ return run(api.deleteTask(id)); }
 };
 
 /* ---------- boot ---------- */
@@ -63,7 +77,19 @@ function boot(){
   $("todayLabel").textContent = fmtToday();
   bindStaticHandlers();
   render();
-  loadAll().catch(function(){ toast("無法連線到伺服器，請檢查網路後重新整理"); });
+  loadAll().catch(handleError);
+  showWhoAmI();
+}
+
+function showWhoAmI(){
+  var chip = $("userChip");
+  if(!chip) return;
+  api.me().then(function(me){
+    chip.hidden = false;
+    $("userEmail").textContent = me.email || me.name || "";
+  }).catch(function(){
+    // 登入資訊拿不到就單純不顯示，loadAll 已經會報錯了
+  });
 }
 
 /* ---------- derived data ---------- */
@@ -193,9 +219,17 @@ function moveTask(id, delta){
 }
 
 /* ---------- task sheet ---------- */
-function fillProjectSelect(){
+function fillProjectSelect(currentId){
   var sel = $("task-project");
-  sel.innerHTML = visibleProjects().map(function(p){ return '<option value="'+p.id+'">'+escapeHtml(p.name)+'</option>'; }).join("");
+  var list = visibleProjects();
+  var current = currentId ? projectById(currentId) : null;
+  if(current && list.indexOf(current)===-1) list = [current].concat(list);
+  var html = '<option value="">未分類</option>';
+  html += list.map(function(p){
+    var label = escapeHtml(p.name) + (p.archived ? "（已封存）" : "");
+    return '<option value="'+p.id+'">'+label+'</option>';
+  }).join("");
+  sel.innerHTML = html;
 }
 function setSeg(segId, val){
   var seg = $(segId);
@@ -203,11 +237,12 @@ function setSeg(segId, val){
 }
 
 function openTaskSheet(id){
-  fillProjectSelect();
+  var editing = id ? tasks.find(function(x){ return x.id===id; }) : null;
+  if(id && !editing) return;
+  fillProjectSelect(editing ? editing.projectId : null);
   var overlay = $("taskOverlay");
   if(id){
-    var t = tasks.find(function(x){ return x.id===id; });
-    if(!t) return;
+    var t = editing;
     editingTaskId = id;
     $("taskSheetTitle").textContent = "編輯任務";
     $("task-title").value = t.title||"";
@@ -221,7 +256,7 @@ function openTaskSheet(id){
     editingTaskId = null;
     $("taskSheetTitle").textContent = "新增任務";
     $("task-title").value = "";
-    if(visibleProjects().length) $("task-project").value = visibleProjects()[0].id;
+    $("task-project").value = activeFilter || (visibleProjects()[0] ? visibleProjects()[0].id : "");
     $("task-due").value = "";
     $("task-notes").value = "";
     taskStatusValue = editingStatusPreset;
@@ -287,7 +322,7 @@ function bindStaticHandlers(){
     if(!title) return;
     var data = {
       title: title,
-      projectId: $("task-project").value || (visibleProjects()[0] && visibleProjects()[0].id) || "",
+      projectId: $("task-project").value || null,
       status: taskStatusValue,
       dueDate: $("task-due").value || null,
       priority: taskPriorityValue,
@@ -308,7 +343,7 @@ function bindStaticHandlers(){
     if(!name) return;
     var color = newProjColor || PALETTE[0];
     store.addProject({name:name, color:color, archived:false}).then(function(){
-      $("newProjName").value = "";
+      if(projects.some(function(p){ return p.name===name; })) $("newProjName").value = "";
       renderProjectModal();
     });
   });
@@ -370,11 +405,10 @@ function renderProjectModal(){
   wrap.querySelectorAll("[data-delproj]").forEach(function(btn){
     btn.addEventListener("click", function(){
       var id = btn.getAttribute("data-delproj");
-      if(!confirm("刪除專案會一併刪除底下所有任務，確定要刪除嗎？")) return;
-      var toDelete = tasks.filter(function(t){ return t.projectId===id; });
-      Promise.all(toDelete.map(function(t){ return store.deleteTask(t.id); })).then(function(){
-        return store.deleteProject(id);
-      }).then(renderProjectModal);
+      var count = tasks.filter(function(t){ return t.projectId===id; }).length;
+      if(!confirm("刪除專案會一併刪除底下 "+count+" 個任務，確定要刪除嗎？")) return;
+      if(activeFilter===id) activeFilter = null;
+      store.deleteProject(id).then(renderProjectModal);
     });
   });
 }

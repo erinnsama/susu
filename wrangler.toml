@@ -2,9 +2,26 @@ name = "erinsama-schedule"
 main = "src/worker.js"
 compatibility_date = "2026-09-14"
 
+# 關掉 *.workers.dev 網址。
+# 不關的話，Cloudflare Access 只保護 schedule.erinsama.com，
+# 別人知道 workers.dev 網址就能繞過 Email 登入直接讀寫資料庫。
+workers_dev = false
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
+# /api/* 一律先交給 Worker（才會經過登入驗證），其餘路徑走靜態檔
+run_worker_first = ["/api/*"]
+not_found_handling = "none"
+
+[vars]
+# ↓↓↓ 部署前要填這三個，沒填的話 API 會一律回 500（故意的，避免資料裸奔）↓↓↓
+# Zero Trust 後台左上角的 team 名稱，格式是 xxx.cloudflareaccess.com
+ACCESS_TEAM_DOMAIN = ""
+# Access Application 設定頁裡的 Application Audience (AUD) Tag
+ACCESS_AUD = ""
+# 允許登入的信箱，多個用逗號分隔
+ALLOWED_EMAILS = "wwrinkz@gmail.com"
 
 [[d1_databases]]
 binding = "DB"
@@ -14,3 +31,25 @@ database_id = "499b3c15-70bb-4e20-bcc0-3bb8699029b7"
 [[routes]]
 pattern = "schedule.erinsama.com"
 custom_domain = true
+
+# ---------------------------------------------------------------
+# 本機開發用環境：npm run dev 會帶 --env dev
+# 這一段不會被 npm run deploy 用到，所以 DEV_NO_AUTH 不會上到正式站。
+# （沒有 routes，本機也就不會被模擬成 schedule.erinsama.com）
+# ---------------------------------------------------------------
+[env.dev.vars]
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+ALLOWED_EMAILS = "dev@localhost"
+DEV_NO_AUTH = "1"
+
+[env.dev.assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+not_found_handling = "none"
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "schedule-db"
+database_id = "499b3c15-70bb-4e20-bcc0-3bb8699029b7"
