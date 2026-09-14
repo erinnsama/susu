@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ERINSAMA待辦清單</title>
+<meta name="theme-color" content="#DE5D83">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ERINSAMA待辦清單">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="shell">
+  <header>
+    <div class="brand">
+      <span class="eyebrow">To-Do List</span>
+      <h1>
+        <svg class="bell" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2a1 1 0 0 1 1 1v1.06A7.002 7.002 0 0 1 19 11v3.586l1.707 1.707A1 1 0 0 1 20 18H4a1 1 0 0 1-.707-1.707L5 14.586V11a7.002 7.002 0 0 1 6-6.94V3a1 1 0 0 1 1-1zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z" fill="currentColor"/></svg>
+        ERINSAMA待辦清單
+      </h1>
+      <span class="today mono" id="todayLabel"></span>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat accent" id="statToday"><span class="n mono">0</span><span class="l">今天到期</span></div>
+    <div class="stat danger" id="statOverdue"><span class="n mono">0</span><span class="l">已逾期</span></div>
+    <div class="stat" id="statDoing"><span class="n mono">0</span><span class="l">進行中</span></div>
+    <div class="stat" id="statOpen"><span class="n mono">0</span><span class="l">未完成</span></div>
+  </div>
+
+  <div class="chiprow" id="chipRow"></div>
+
+  <div class="tabs" id="mobileTabs">
+    <button data-status="todo">待辦 <span class="badge" id="tabCountTodo">0</span></button>
+    <button data-status="doing">進行中 <span class="badge" id="tabCountDoing">0</span></button>
+    <button data-status="done">已完成 <span class="badge" id="tabCountDone">0</span></button>
+  </div>
+
+  <div class="board" id="board">
+    <section class="column" data-status="todo">
+      <div class="col-head"><div class="titles"><span class="eyebrow">To Do</span><h2>待辦</h2></div><span class="badge mono" id="countTodo">0</span></div>
+      <div class="cardlist" id="listTodo"></div>
+      <button class="add-task" data-add="todo">＋ 新增任務</button>
+    </section>
+    <section class="column" data-status="doing">
+      <div class="col-head"><div class="titles"><span class="eyebrow">Doing</span><h2>進行中</h2></div><span class="badge mono" id="countDoing">0</span></div>
+      <div class="cardlist" id="listDoing"></div>
+      <button class="add-task" data-add="doing">＋ 新增任務</button>
+    </section>
+    <section class="column" data-status="done">
+      <div class="col-head"><div class="titles"><span class="eyebrow">Done</span><h2>已完成</h2></div><span class="badge mono" id="countDone">0</span></div>
+      <div class="cardlist" id="listDone"></div>
+      <button class="add-task" data-add="done">＋ 新增任務</button>
+    </section>
+  </div>
+</div>
+
+<!-- task sheet -->
+<div class="overlay" id="taskOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle">
+    <button class="close-x" id="taskClose" aria-label="關閉">✕</button>
+    <h3 id="taskSheetTitle">新增任務</h3>
+    <form id="taskForm">
+      <div class="field">
+        <label for="task-title">任務名稱</label>
+        <input type="text" id="task-title" required maxlength="120" placeholder="例如：確認素材大方向">
+      </div>
+      <div class="field">
+        <label for="task-project">所屬專案</label>
+        <select id="task-project"></select>
+      </div>
+      <div class="field">
+        <label>狀態</label>
+        <div class="seg" id="task-status-seg">
+          <button type="button" data-val="todo">待辦</button>
+          <button type="button" data-val="doing">進行中</button>
+          <button type="button" data-val="done">已完成</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="task-due">截止日期</label>
+        <input type="date" id="task-due">
+      </div>
+      <div class="hint">
+        <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a1 1 0 0 1 1 1v1.06A7.002 7.002 0 0 1 19 11v3.586l1.707 1.707A1 1 0 0 1 20 18H4a1 1 0 0 1-.707-1.707L5 14.586V11a7.002 7.002 0 0 1 6-6.94V3a1 1 0 0 1 1-1zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z" fill="currentColor"/></svg>
+        有設定日期的任務，才會被推播提醒
+      </div>
+      <div class="field">
+        <label>優先度</label>
+        <div class="seg" id="task-priority-seg">
+          <button type="button" data-val="low">低</button>
+          <button type="button" data-val="normal">一般</button>
+          <button type="button" data-val="high">急</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="task-notes">備註</label>
+        <textarea id="task-notes" maxlength="500" placeholder="選填"></textarea>
+      </div>
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-danger" id="taskDelete" hidden>刪除</button>
+        <button type="button" class="btn btn-ghost" id="taskCancel">取消</button>
+        <button type="submit" class="btn btn-primary">儲存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- project manage sheet -->
+<div class="overlay" id="projOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="projSheetTitle">
+    <button class="close-x" id="projClose" aria-label="關閉">✕</button>
+    <h3 id="projSheetTitle">管理專案</h3>
+    <div id="projList"></div>
+    <div class="add-proj">
+      <label for="newProjName" style="font-size:12px;font-weight:700;color:var(--text-muted);">新增專案</label>
+      <div class="add-proj-row">
+        <input type="text" id="newProjName" maxlength="40" placeholder="專案名稱">
+        <button type="button" class="btn btn-primary" id="newProjAdd" style="flex:none;">新增</button>
+      </div>
+      <div class="swatches" id="newProjSwatches"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

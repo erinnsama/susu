@@ -1,0 +1,13 @@
+{
+  "name": "ERINSAMA待辦清單",
+  "short_name": "ERINSAMA",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FBF6F5",
+  "theme_color": "#DE5D83",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

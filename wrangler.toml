@@ -1,0 +1,16 @@
+name = "erinsama-schedule"
+main = "src/worker.js"
+compatibility_date = "2026-09-14"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "schedule-db"
+database_id = "499b3c15-70bb-4e20-bcc0-3bb8699029b7"
+
+[[routes]]
+pattern = "schedule.erinsama.com"
+custom_domain = true
