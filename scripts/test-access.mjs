@@ -46,7 +46,7 @@ globalThis.fetch = async (url) => {
 
 const { authenticate } = await import("../src/lib/access.js");
 
-const env = { ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD, ALLOWED_EMAILS: "wwrinkz@gmail.com" };
+const env = { ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD, ALLOWED_EMAILS: "owner@example.com" };
 const now = Math.floor(Date.now() / 1000);
 const basePayload = { aud: [AUD], iss: `https://${TEAM}`, exp: now + 3600, iat: now };
 
@@ -68,10 +68,10 @@ async function expect(name, request, predicate) {
   }
 }
 
-await expect("正常信箱可以進來", req(await makeToken({ ...basePayload, email: "wwrinkz@gmail.com" })),
-  (r) => r.ok && r.identity.type === "user" && r.identity.email === "wwrinkz@gmail.com");
+await expect("正常信箱可以進來", req(await makeToken({ ...basePayload, email: "owner@example.com" })),
+  (r) => r.ok && r.identity.type === "user" && r.identity.email === "owner@example.com");
 
-await expect("大小寫不同的信箱也認得", req(await makeToken({ ...basePayload, email: "WWRinkz@Gmail.com" })),
+await expect("大小寫不同的信箱也認得", req(await makeToken({ ...basePayload, email: "Owner@Example.COM" })),
   (r) => r.ok);
 
 await expect("不在白名單的信箱擋掉", req(await makeToken({ ...basePayload, email: "someone@else.com" })),
@@ -83,25 +83,41 @@ await expect("沒有憑證擋掉", req(null),
 await expect("亂寫的憑證擋掉", req("not-a-valid-jwt"),
   (r) => !r.ok && r.status === 401);
 
-await expect("別人簽的憑證擋掉", req(await makeToken({ ...basePayload, email: "wwrinkz@gmail.com" }, attacker.privateKey)),
+await expect("別人簽的憑證擋掉", req(await makeToken({ ...basePayload, email: "owner@example.com" }, attacker.privateKey)),
   (r) => !r.ok && r.status === 401);
 
-await expect("過期的憑證擋掉", req(await makeToken({ ...basePayload, email: "wwrinkz@gmail.com", exp: now - 10 })),
+await expect("過期的憑證擋掉", req(await makeToken({ ...basePayload, email: "owner@example.com", exp: now - 10 })),
   (r) => !r.ok && r.status === 401);
 
-await expect("別的應用程式的憑證擋掉", req(await makeToken({ ...basePayload, aud: ["別人的aud"], email: "wwrinkz@gmail.com" })),
+await expect("別的應用程式的憑證擋掉", req(await makeToken({ ...basePayload, aud: ["別人的aud"], email: "owner@example.com" })),
   (r) => !r.ok && r.status === 403);
 
-await expect("偽造來源的憑證擋掉", req(await makeToken({ ...basePayload, iss: "https://壞人.cloudflareaccess.com", email: "wwrinkz@gmail.com" })),
+await expect("偽造來源的憑證擋掉", req(await makeToken({ ...basePayload, iss: "https://壞人.cloudflareaccess.com", email: "owner@example.com" })),
   (r) => !r.ok && r.status === 403);
 
 await expect("Service Token 認得出來", req(await makeToken({ ...basePayload, common_name: "claude-排程" })),
   (r) => r.ok && r.identity.type === "service");
 
-// 沒設定 Access 時，正式環境要擋下來
+// ACCESS_AUD 沒填時：仍要驗簽章與信箱，只是不檢查 aud
+const noAudEnv = { ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: "", ALLOWED_EMAILS: "owner@example.com" };
+async function expectNoAud(name, request, predicate) {
+  const result = await authenticate(request, noAudEnv);
+  if (predicate(result)) { pass++; console.log(`  ✓ ${name}`); }
+  else { fail++; console.log(`  ✗ ${name}`, JSON.stringify(result)); }
+}
+await expectNoAud("沒填 AUD 時，別的 App 的憑證會被接受（已知的降級）",
+  req(await makeToken({ ...basePayload, aud: ["另一個app"], email: "owner@example.com" })), (r) => r.ok);
+await expectNoAud("沒填 AUD 時，別人簽的憑證仍然擋掉",
+  req(await makeToken({ ...basePayload, email: "owner@example.com" }, attacker.privateKey)), (r) => !r.ok);
+await expectNoAud("沒填 AUD 時，不在白名單的信箱仍然擋掉",
+  req(await makeToken({ ...basePayload, email: "someone@else.com" })), (r) => !r.ok && r.status === 403);
+await expectNoAud("沒填 AUD 時，過期憑證仍然擋掉",
+  req(await makeToken({ ...basePayload, email: "owner@example.com", exp: now - 10 })), (r) => !r.ok);
+
+// 連 team domain 都沒設定時，正式環境要擋下來
 const unconfigured = await authenticate(req(null), { ALLOWED_EMAILS: "" });
-if (!unconfigured.ok && unconfigured.status === 500) { pass++; console.log("  ✓ 沒設定 Access 時回 500 而不是放行"); }
-else { fail++; console.log("  ✗ 沒設定 Access 時回 500 而不是放行", JSON.stringify(unconfigured)); }
+if (!unconfigured.ok && unconfigured.status === 500) { pass++; console.log("  ✓ 沒設定 team domain 時回 500 而不是放行"); }
+else { fail++; console.log("  ✗ 沒設定 team domain 時回 500 而不是放行", JSON.stringify(unconfigured)); }
 
 const devMode = await authenticate(req(null), { DEV_NO_AUTH: "1" });
 if (devMode.ok) { pass++; console.log("  ✓ 本機開發模式可以跳過驗證"); }

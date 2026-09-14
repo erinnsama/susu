@@ -87,9 +87,12 @@ export async function authenticate(request, env) {
   const teamDomain = env.ACCESS_TEAM_DOMAIN;
   const aud = env.ACCESS_AUD;
 
-  // 還沒設定 Access 變數時，只有本機 wrangler dev 放行，正式環境一律擋掉，
+  // ACCESS_AUD 是選填的：填了就多驗一層「這張憑證屬於這個 Application」。
+  // 沒填時仍然會驗簽章、發行來源與信箱白名單，只是同一個 Zero Trust 組織底下
+  // 其他 Application 簽給白名單信箱的憑證也會被接受。
+  // ACCESS_TEAM_DOMAIN 沒填則無法驗證任何東西，正式環境一律擋掉，
   // 免得部署上去卻忘了設定，等於整個資料庫對外開放。
-  if (!teamDomain || !aud) {
+  if (!teamDomain) {
     // 只認 DEV_NO_AUTH（由 npm run dev 帶入）。
     // 不能改用網址判斷是不是本機：wrangler dev 會照 wrangler.toml 的 routes
     // 模擬成 schedule.erinsama.com，看起來跟正式環境一模一樣。
@@ -99,7 +102,7 @@ export async function authenticate(request, env) {
     return {
       ok: false,
       status: 500,
-      error: "尚未設定 ACCESS_TEAM_DOMAIN / ACCESS_AUD，請見 README 步驟 5"
+      error: "尚未設定 ACCESS_TEAM_DOMAIN，請見 README 步驟 5"
     };
   }
 
@@ -115,8 +118,10 @@ export async function authenticate(request, env) {
     return { ok: false, status: 401, error: "Access 憑證格式不正確" };
   }
 
-  const audList = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  if (!audList.includes(aud)) return { ok: false, status: 403, error: "Access 憑證不屬於這個應用程式" };
+  if (aud) {
+    const audList = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+    if (!audList.includes(aud)) return { ok: false, status: 403, error: "Access 憑證不屬於這個應用程式" };
+  }
   if (payload.iss !== `https://${teamDomain}`) return { ok: false, status: 403, error: "Access 憑證來源不正確" };
 
   const now = Math.floor(Date.now() / 1000);

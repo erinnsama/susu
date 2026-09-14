@@ -120,7 +120,83 @@ function render(){
   renderStats();
   renderChips();
   renderBoard();
+  renderTodayBadge();
+  if(!$("todayOverlay").hidden) renderTodaySheet();
 }
+
+/* ---------- 今日任務 ---------- */
+// 「今日任務」＝截止日是今天且還沒完成的任務，
+// 跟「今天到期」統計、推播提醒共用同一份資料，不會各算各的。
+function todayTasks(){
+  var t = todayStr();
+  return tasks.filter(function(x){ return x.dueDate===t && x.status!=="done"; });
+}
+function renderTodayBadge(){
+  $("todayCount").textContent = todayTasks().length;
+}
+
+function todayRowHtml(t, action){
+  var p = projectById(t.projectId);
+  var color = p ? p.color : "#8C93A6";
+  var name = p ? p.name : "未分類";
+  var statusLabel = {todo:"待辦", doing:"進行中", done:"已完成"}[t.status] || t.status;
+  var btn = action==="add"
+    ? '<button type="button" class="today-btn add" data-add-today="'+t.id+'" aria-label="加入今日任務">＋</button>'
+    : '<button type="button" class="today-btn remove" data-remove-today="'+t.id+'" aria-label="移出今日任務">－</button>';
+  return (
+    '<div class="today-row">'+
+      '<span class="dot" style="background:'+color+'"></span>'+
+      '<div class="today-meta">'+
+        '<span class="today-title">'+escapeHtml(t.title)+'</span>'+
+        '<span class="today-sub">'+escapeHtml(name)+' · '+statusLabel+
+          (t.priority==="high" ? ' · <b class="urgent-text">急</b>' : '')+
+          (action==="add" && t.dueDate ? ' · 原訂 '+t.dueDate.slice(5).replace("-","/") : '')+
+        '</span>'+
+      '</div>'+
+      btn+
+    '</div>'
+  );
+}
+
+function renderTodaySheet(){
+  var t0 = todayStr();
+  $("todayDateLabel").textContent = fmtToday();
+
+  var mine = sortTasks(todayTasks());
+  $("todayNowCount").textContent = mine.length;
+  $("todayList").innerHTML = mine.length
+    ? mine.map(function(t){ return todayRowHtml(t, "remove"); }).join("")
+    : '<div class="empty-slot">今天還沒有排任務，從下面挑幾個吧</div>';
+
+  var keyword = ($("todaySearch").value || "").trim().toLowerCase();
+  var pool = sortTasks(tasks.filter(function(x){
+    if(x.status==="done") return false;
+    if(x.dueDate===t0) return false;
+    if(keyword && x.title.toLowerCase().indexOf(keyword)===-1) return false;
+    return true;
+  }));
+  $("todayPool").innerHTML = pool.length
+    ? pool.map(function(t){ return todayRowHtml(t, "add"); }).join("")
+    : '<div class="empty-slot">'+(keyword ? "沒有符合的任務" : "所有未完成的任務都已經在今天了")+'</div>';
+
+  $("todayList").querySelectorAll("[data-remove-today]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      store.updateTask(btn.getAttribute("data-remove-today"), {dueDate:null}).then(renderTodaySheet);
+    });
+  });
+  $("todayPool").querySelectorAll("[data-add-today]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      store.updateTask(btn.getAttribute("data-add-today"), {dueDate:todayStr()}).then(renderTodaySheet);
+    });
+  });
+}
+
+function openTodaySheet(){
+  $("todaySearch").value = "";
+  renderTodaySheet();
+  $("todayOverlay").hidden = false;
+}
+function closeTodaySheet(){ $("todayOverlay").hidden = true; }
 
 function renderStats(){
   var t = todayStr();
@@ -335,6 +411,11 @@ function bindStaticHandlers(){
     }
     closeTaskSheet();
   });
+
+  $("todayBtn").addEventListener("click", openTodaySheet);
+  $("todayClose").addEventListener("click", closeTodaySheet);
+  $("todayOverlay").addEventListener("click", function(e){ if(e.target===$("todayOverlay")) closeTodaySheet(); });
+  $("todaySearch").addEventListener("input", renderTodaySheet);
 
   $("projClose").addEventListener("click", closeProjectModal);
   $("projOverlay").addEventListener("click", function(e){ if(e.target===$("projOverlay")) closeProjectModal(); });

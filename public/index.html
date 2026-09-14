@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ERINSAMA待辦清單</title>
+<title>待辦清單GO!</title>
 <meta name="theme-color" content="#DE5D83">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192.png">
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ERINSAMA待辦清單">
+<meta name="apple-mobile-web-app-title" content="待辦清單GO!">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -41,6 +41,14 @@
     <div class="stat danger" id="statOverdue"><span class="n mono">0</span><span class="l">已逾期</span></div>
     <div class="stat" id="statDoing"><span class="n mono">0</span><span class="l">進行中</span></div>
     <div class="stat" id="statOpen"><span class="n mono">0</span><span class="l">未完成</span></div>
+  </div>
+
+  <div class="toolbar">
+    <button type="button" class="btn-today" id="todayBtn">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zm12 7H5v10h14V9z" fill="currentColor"/></svg>
+      今日任務
+      <span class="badge mono" id="todayCount">0</span>
+    </button>
   </div>
 
   <div class="chiprow" id="chipRow"></div>
@@ -118,6 +126,26 @@
         <button type="submit" class="btn btn-primary">儲存</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- today sheet -->
+<div class="overlay" id="todayOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="todaySheetTitle">
+    <button class="close-x" id="todayClose" aria-label="關閉">✕</button>
+    <h3 id="todaySheetTitle">今日任務</h3>
+    <p class="sheet-hint" id="todayDateLabel"></p>
+
+    <div class="today-section">
+      <div class="today-head"><span>今天要做</span><span class="badge mono" id="todayNowCount">0</span></div>
+      <div id="todayList"></div>
+    </div>
+
+    <div class="today-section">
+      <div class="today-head"><span>從清單加入</span></div>
+      <input type="search" id="todaySearch" placeholder="搜尋任務名稱…" aria-label="搜尋任務">
+      <div id="todayPool"></div>
+    </div>
   </div>
 </div>
 

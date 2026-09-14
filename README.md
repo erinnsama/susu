@@ -55,7 +55,7 @@ npm run db:migrate:remote
 - **Application domain**：`schedule.erinsama.com`（路徑留空，整個網域都保護）
 - **Policy 1 — 給自己用**
   - Action：`Allow`
-  - Include：`Emails` → `wwrinkz@gmail.com`
+  - Include：`Emails` → 妳的信箱
   - 登入方式留 One-time PIN（Email 收驗證碼）
 - **Policy 2 — 給 Claude 排程用**
   - Action：`Service Auth`
@@ -76,7 +76,13 @@ npm run db:migrate:remote
 [vars]
 ACCESS_TEAM_DOMAIN = "妳的team名稱.cloudflareaccess.com"
 ACCESS_AUD = "那一長串 AUD Tag"
-ALLOWED_EMAILS = "wwrinkz@gmail.com"
+```
+
+允許登入的信箱**不放在 wrangler.toml**（這個 repo 是公開的），
+改存成 Worker secret：
+
+```
+echo "你的信箱@gmail.com" | npx wrangler secret put ALLOWED_EMAILS
 ```
 
 這三個沒填的話，正式環境的 `/api/*` 會一律回 500 並提示尚未設定——

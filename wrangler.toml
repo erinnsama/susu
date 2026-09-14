@@ -17,17 +17,20 @@ not_found_handling = "none"
 [vars]
 # ↓↓↓ 部署前要填這三個，沒填的話 API 會一律回 500（故意的，避免資料裸奔）↓↓↓
 # Zero Trust 後台左上角的 team 名稱，格式是 xxx.cloudflareaccess.com
-ACCESS_TEAM_DOMAIN = ""
+ACCESS_TEAM_DOMAIN = "rough-frost-7c55.cloudflareaccess.com"
 # Access Application 設定頁裡的 Application Audience (AUD) Tag
-ACCESS_AUD = ""
-# 允許登入的信箱，多個用逗號分隔
-ALLOWED_EMAILS = "wwrinkz@gmail.com"
+ACCESS_AUD = "744d89d37d93c1ec9813dc33aeb1e2ad98095dd2b00dcf748865464e615e5f3c"
+# ALLOWED_EMAILS（允許登入的信箱）不放在這裡——這個 repo 是公開的。
+# 它存成 Worker secret，用這行設定或更新：
+#   echo "a@b.com,c@d.com" | npx wrangler secret put ALLOWED_EMAILS
 
 [[d1_databases]]
 binding = "DB"
 database_name = "schedule-db"
 database_id = "499b3c15-70bb-4e20-bcc0-3bb8699029b7"
 
+# custom domain：Workers 自己管理這個主機名稱的 DNS，
+# 後面沒有 origin 可以流過去，也沒有「橘色雲被關掉就失去防護」的風險。
 [[routes]]
 pattern = "schedule.erinsama.com"
 custom_domain = true

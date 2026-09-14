@@ -52,7 +52,9 @@ async function healthCheck(env) {
   const result = {
     ok: true,
     time: new Date().toISOString(),
-    accessConfigured: Boolean(env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD),
+    accessConfigured: Boolean(env.ACCESS_TEAM_DOMAIN),
+    audPinned: Boolean(env.ACCESS_AUD),
+    emailAllowlist: Boolean(env.ALLOWED_EMAILS),
     database: "ok"
   };
   try {
