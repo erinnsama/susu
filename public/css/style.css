@@ -33,7 +33,7 @@ body{
 .display{font-family:'Baloo 2','Noto Sans TC',system-ui,sans-serif;}
 
 button, input, select, textarea{font:inherit; color:inherit;}
-button{cursor:pointer;}
+button{cursor:pointer; -webkit-appearance:none; appearance:none;}
 :focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px; border-radius:4px;}
 
 .shell{max-width:960px; margin-inline:auto; display:flex; flex-direction:column; gap:18px;
@@ -139,7 +139,7 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .proj-row[data-archived="1"]{opacity:.5;}
 .add-proj{display:flex; flex-direction:column; gap:10px; padding-top:14px; margin-top:6px; border-top:1px dashed var(--border);}
 .add-proj-row{display:flex; gap:8px; align-items:center;}
-.add-proj-row input[type="text"]{flex:1; border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 11px; background:var(--bg);}
+.add-proj-row input[type="text"]{flex:1; min-width:0; border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 11px; background:var(--bg);}
 
 .toast{position:fixed; top:16px; left:50%; transform:translateX(-50%); background:var(--surface); border:1px solid var(--border); color:var(--text); padding:9px 16px; border-radius:999px; font-size:12.5px; box-shadow:var(--shadow); z-index:60;}
 .toast[hidden]{display:none;}
