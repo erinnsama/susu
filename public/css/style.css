@@ -100,8 +100,8 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .due{display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--text-muted);}
 .due.overdue{color:var(--danger); font-weight:700;}
 .due.today{color:var(--accent-strong); font-weight:700;}
-.task-link{display:inline-flex; align-items:center; color:var(--text-muted); flex:none;}
-.task-link:hover{color:var(--accent-strong);}
+.task-link{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; margin:-5px; border-radius:8px; color:var(--text-muted); flex:none;}
+.task-link:hover, .task-link:active{color:var(--accent-strong); background:var(--surface-2);}
 .movebtns{display:flex; gap:4px;}
 .movebtns button{width:24px; height:24px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); font-weight:800; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; color:var(--text-muted);}
 .movebtns button:disabled{opacity:.3; cursor:default;}
