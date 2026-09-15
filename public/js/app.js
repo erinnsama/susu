@@ -128,22 +128,26 @@ function registerServiceWorker(){
 function setPushUi(state, label){
   var btn = $("pushToggleBtn");
   var hint = $("pushHint");
+  var testBtn = $("pushTestBtn");
   if(!btn) return;
   if(state==="hide"){
     btn.hidden = true;
     hint.hidden = true;
+    testBtn.hidden = true;
     return;
   }
   if(state==="hint"){
     btn.hidden = true;
     hint.hidden = false;
     hint.textContent = label;
+    testBtn.hidden = true;
     return;
   }
   btn.hidden = false;
   hint.hidden = true;
   btn.setAttribute("data-on", state==="on" ? "1" : "0");
   $("pushToggleLabel").textContent = label;
+  testBtn.hidden = state!=="on";
 }
 
 function initPush(){
@@ -212,6 +216,22 @@ function unsubscribePush(){
     toast("推播提醒已關閉");
   }).catch(function(err){
     handleError(err);
+  });
+}
+
+function sendTestPush(){
+  var btn = $("pushTestBtn");
+  btn.disabled = true;
+  api.pushTest().then(function(res){
+    var outcomes = (res && res.outcomes) || [];
+    var okCount = outcomes.filter(function(o){ return o.ok; }).length;
+    if(!outcomes.length) toast("目前沒有已訂閱的裝置");
+    else if(okCount>0) toast("測試推播已送出，等一下看看有沒有跳通知");
+    else toast("送出失敗："+(outcomes[0] && outcomes[0].error || "未知錯誤"));
+  }).catch(function(err){
+    handleError(err);
+  }).then(function(){
+    btn.disabled = false;
   });
 }
 
@@ -537,6 +557,7 @@ function bindStaticHandlers(){
 
   $("todayBtn").addEventListener("click", openTodaySheet);
   $("pushToggleBtn").addEventListener("click", togglePush);
+  $("pushTestBtn").addEventListener("click", sendTestPush);
   $("todayClose").addEventListener("click", closeTodaySheet);
   $("todayOverlay").addEventListener("click", function(e){ if(e.target===$("todayOverlay")) closeTodaySheet(); });
   $("todaySearch").addEventListener("input", renderTodaySheet);
