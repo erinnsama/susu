@@ -1,3 +1,9 @@
+// 有些瀏覽器判斷「可安裝成應用程式」時，會檢查 Service Worker 是否處理 fetch
+// （即使只是原樣轉發），沒有這個監聽器安裝按鈕可能不會出現
+self.addEventListener("fetch", function (event) {
+  event.respondWith(fetch(event.request));
+});
+
 self.addEventListener("push", function (event) {
   var data = {};
   try {

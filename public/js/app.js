@@ -112,6 +112,18 @@ function pushSupported(){
 function isStandalone(){
   return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 }
+// 只有 iOS Safari 規定「一定要從主畫面圖示開才能訂閱推播」，
+// 桌機瀏覽器、Android 一般分頁就能訂閱，不該被這個限制擋到
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+// Service Worker 要在頁面一載入就註冊，不能等使用者先「安裝」才註冊——
+// 瀏覽器判斷「這個網站可以安裝成應用程式」的條件之一就是要有已註冊的 Service Worker，
+// 等安裝完才註冊就變成先有雞還是先有蛋，安裝按鈕永遠不會出現。
+function registerServiceWorker(){
+  if(!("serviceWorker" in navigator)) return Promise.resolve(null);
+  return navigator.serviceWorker.register("/sw.js").catch(function(){ return null; });
+}
 
 function setPushUi(state, label){
   var btn = $("pushToggleBtn");
@@ -135,11 +147,12 @@ function setPushUi(state, label){
 }
 
 function initPush(){
+  registerServiceWorker();
   if(!pushSupported()){
     setPushUi("hide");
     return;
   }
-  if(!isStandalone()){
+  if(isIOS() && !isStandalone()){
     setPushUi("hint", "把這個網站加到主畫面，並從主畫面圖示打開，才能設定推播提醒");
     return;
   }
@@ -147,7 +160,7 @@ function initPush(){
     setPushUi("hint", "推播權限已被封鎖，請到系統設定重新允許通知");
     return;
   }
-  navigator.serviceWorker.register("/sw.js").then(function(reg){
+  navigator.serviceWorker.ready.then(function(reg){
     return reg.pushManager.getSubscription();
   }).then(function(sub){
     setPushUi(sub ? "on" : "off", sub ? "推播提醒已開啟" : "開啟推播提醒");
