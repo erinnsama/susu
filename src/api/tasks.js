@@ -9,7 +9,8 @@ const PATCHABLE = {
   status: "status",
   dueDate: "due_date",
   priority: "priority",
-  notes: "notes"
+  notes: "notes",
+  link: "link"
 };
 
 function rowToTask(r) {
@@ -21,6 +22,7 @@ function rowToTask(r) {
     dueDate: r.due_date,
     priority: r.priority,
     notes: r.notes,
+    link: r.link,
     createdAt: r.created_at,
     updatedAt: r.updated_at
   };
@@ -44,6 +46,11 @@ function validate(body, { partial }) {
   }
   if (body.notes !== undefined && String(body.notes || "").length > 500) {
     return "備註不能超過 500 字";
+  }
+  if (body.link !== undefined && body.link !== null && body.link !== "") {
+    const link = String(body.link).trim();
+    if (link.length > 2000) return "連結不能超過 2000 字";
+    if (!/^https?:\/\//i.test(link)) return "連結要以 http:// 或 https:// 開頭";
   }
   return null;
 }
@@ -106,8 +113,8 @@ export async function handleTasks(request, env, url) {
     const ts = nowIso();
     await db
       .prepare(
-        `INSERT INTO tasks (id, title, project_id, status, due_date, priority, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO tasks (id, title, project_id, status, due_date, priority, notes, link, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
         tid,
@@ -117,6 +124,7 @@ export async function handleTasks(request, env, url) {
         body.dueDate || null,
         body.priority || "normal",
         body.notes || "",
+        body.link ? String(body.link).trim() : null,
         ts,
         ts
       )
@@ -145,6 +153,7 @@ export async function handleTasks(request, env, url) {
       if (key === "title") values.push(String(body[key]).trim());
       else if (key === "dueDate") values.push(body[key] || null);
       else if (key === "projectId") values.push(body[key] || null);
+      else if (key === "link") values.push(body[key] ? String(body[key]).trim() : null);
       else values.push(body[key]);
     }
     if (fields.length) {

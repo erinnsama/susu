@@ -377,6 +377,9 @@ function renderChips(){
 function bellSvg(cls){
   return '<svg class="'+(cls||"")+'" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a1 1 0 0 1 1 1v1.06A7.002 7.002 0 0 1 19 11v3.586l1.707 1.707A1 1 0 0 1 20 18H4a1 1 0 0 1-.707-1.707L5 14.586V11a7.002 7.002 0 0 1 6-6.94V3a1 1 0 0 1 1-1zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z" fill="currentColor"/></svg>';
 }
+function linkSvg(){
+  return '<svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 1 0-1.41l3.53-3.53a2.5 2.5 0 1 1 3.54 3.54l-1.77 1.76a1 1 0 1 1-1.41-1.41l1.76-1.77a.5.5 0 0 0-.71-.7l-3.53 3.52a1 1 0 0 1-1.41 0zm-6.13 2.13a2.5 2.5 0 0 1 0-3.54l1.77-1.76a1 1 0 0 1 1.41 1.41l-1.76 1.77a.5.5 0 0 0 .71.7l3.53-3.52a1 1 0 0 1 1.41 1.41l-3.53 3.53a2.5 2.5 0 0 1-3.54 0z" fill="currentColor"/></svg>';
+}
 
 function cardHtml(t){
   var p = projectById(t.projectId);
@@ -398,7 +401,10 @@ function cardHtml(t){
       '</div>'+
       '<button type="button" class="card-title" data-open="'+t.id+'">'+escapeHtml(t.title)+'</button>'+
       '<div class="card-bottom">'+
-        '<span class="due '+dueCls+'">'+(t.dueDate ? bellSvg() + dueLabel : "")+'</span>'+
+        '<div class="card-meta">'+
+          '<span class="due '+dueCls+'">'+(t.dueDate ? bellSvg() + dueLabel : "")+'</span>'+
+          (t.link ? '<a class="task-link" href="'+escapeHtml(t.link)+'" target="_blank" rel="noopener noreferrer" aria-label="開啟檔案連結">'+linkSvg()+'</a>' : "")+
+        '</div>'+
         '<div class="movebtns">'+
           '<button type="button" data-move="'+t.id+':-1" '+(canLeft?"":"disabled")+' aria-label="移到前一欄">‹</button>'+
           '<button type="button" data-move="'+t.id+':1" '+(canRight?"":"disabled")+' aria-label="移到下一欄">›</button>'+
@@ -468,6 +474,7 @@ function openTaskSheet(id){
     $("task-project").value = t.projectId||"";
     $("task-due").value = t.dueDate||"";
     $("task-notes").value = t.notes||"";
+    $("task-link").value = t.link||"";
     taskStatusValue = t.status||"todo";
     taskPriorityValue = t.priority||"normal";
     $("taskDelete").hidden = false;
@@ -478,6 +485,7 @@ function openTaskSheet(id){
     $("task-project").value = activeFilter || (visibleProjects()[0] ? visibleProjects()[0].id : "");
     $("task-due").value = "";
     $("task-notes").value = "";
+    $("task-link").value = "";
     taskStatusValue = editingStatusPreset;
     taskPriorityValue = "normal";
     $("taskDelete").hidden = true;
@@ -545,7 +553,8 @@ function bindStaticHandlers(){
       status: taskStatusValue,
       dueDate: $("task-due").value || null,
       priority: taskPriorityValue,
-      notes: $("task-notes").value.trim()
+      notes: $("task-notes").value.trim(),
+      link: $("task-link").value.trim() || null
     };
     if(editingTaskId){
       store.updateTask(editingTaskId, data);
