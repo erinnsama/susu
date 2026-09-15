@@ -1,11 +1,18 @@
 name = "erinsama-schedule"
 main = "src/worker.js"
 compatibility_date = "2026-09-14"
+# web-push 套件用到 node:crypto，靠這個相容旗標讓它在 Workers 上跑
+compatibility_flags = ["nodejs_compat"]
 
 # 關掉 *.workers.dev 網址。
 # 不關的話，Cloudflare Access 只保護 schedule.erinsama.com，
 # 別人知道 workers.dev 網址就能繞過 Email 登入直接讀寫資料庫。
 workers_dev = false
+
+# 每天固定時間查一次到期任務、發 Web Push 提醒（Asia/Taipei 沒有日光節約時間，
+# 固定 UTC+8：01:00 UTC = 09:00 台北）。跟 Claude 排程無關，完全在 Cloudflare 內部跑。
+[triggers]
+crons = ["0 1 * * *"]
 
 [assets]
 directory = "./public"
@@ -24,6 +31,11 @@ ACCESS_AUD = "744d89d37d93c1ec9813dc33aeb1e2ad98095dd2b00dcf748865464e615e5f3c"
 # 它存成 Worker secret，用這行設定或更新：
 #   echo "a@b.com,c@d.com" | npx wrangler secret put ALLOWED_EMAILS
 
+# Web Push 用的 VAPID 金鑰。公鑰不是機密，可以放這裡；
+# 私鑰存成 secret：echo "私鑰" | npx wrangler secret put VAPID_PRIVATE_KEY
+VAPID_PUBLIC_KEY = "BDywbzyWZstoQhOnAIfltEdx9f2cYzHV6xkCED_HB2wLQaWpOHwfBslKxCZx0nGIdZlt46-0QVgg7pM6OgfC7k0"
+VAPID_SUBJECT = "mailto:wwwrinkz@gmail.com"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "schedule-db"
@@ -38,13 +50,20 @@ custom_domain = true
 # ---------------------------------------------------------------
 # 本機開發用環境：npm run dev 會帶 --env dev
 # 這一段不會被 npm run deploy 用到，所以 DEV_NO_AUTH 不會上到正式站。
-# （沒有 routes，本機也就不會被模擬成 schedule.erinsama.com）
+# routes 明確設空陣列，蓋掉頂層的 custom domain 設定——
+# 不然 wrangler 會警告「部署這個環境會把 schedule.erinsama.com 搶過來」。
 # ---------------------------------------------------------------
+[env.dev]
+routes = []
+
 [env.dev.vars]
 ACCESS_TEAM_DOMAIN = ""
 ACCESS_AUD = ""
 ALLOWED_EMAILS = "dev@localhost"
 DEV_NO_AUTH = "1"
+VAPID_PUBLIC_KEY = "BDywbzyWZstoQhOnAIfltEdx9f2cYzHV6xkCED_HB2wLQaWpOHwfBslKxCZx0nGIdZlt46-0QVgg7pM6OgfC7k0"
+VAPID_SUBJECT = "mailto:wwwrinkz@gmail.com"
+# VAPID_PRIVATE_KEY 不放這裡（這個檔案會進 git）。本機測試用 .dev.vars.dev（已加進 .gitignore）。
 
 [env.dev.assets]
 directory = "./public"

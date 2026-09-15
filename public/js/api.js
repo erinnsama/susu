@@ -42,6 +42,7 @@ async function request(path, options) {
 export const api = {
   me: () => request("/me"),
   health: () => request("/health"),
+  config: () => request("/config"),
   listProjects: () => request("/projects"),
   addProject: (data) => request("/projects", { method: "POST", body: JSON.stringify(data) }),
   updateProject: (id, patch) => request(`/projects/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
@@ -49,5 +50,8 @@ export const api = {
   listTasks: () => request("/tasks"),
   addTask: (data) => request("/tasks", { method: "POST", body: JSON.stringify(data) }),
   updateTask: (id, patch) => request(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
-  deleteTask: (id) => request(`/tasks/${id}`, { method: "DELETE" })
+  deleteTask: (id) => request(`/tasks/${id}`, { method: "DELETE" }),
+  pushSubscribe: (subscription) => request("/push/subscribe", { method: "POST", body: JSON.stringify({ subscription }) }),
+  pushUnsubscribe: (endpoint) => request("/push/subscribe", { method: "DELETE", body: JSON.stringify({ endpoint }) }),
+  pushTest: () => request("/push/test", { method: "POST" })
 };

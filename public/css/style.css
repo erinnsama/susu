@@ -214,3 +214,8 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .today-btn.remove{color:var(--text-muted);}
 .today-btn.remove:hover{color:var(--danger); border-color:var(--danger);}
 #todayPool{max-height:38vh; overflow-y:auto;}
+
+/* 推播提醒開關：關的時候用素色，開了才用強調色，一眼看出目前狀態 */
+#pushToggleBtn[data-on="0"]{background:var(--surface); color:var(--accent-strong); border-color:var(--border);}
+#pushToggleBtn[data-on="0"]:hover{border-color:var(--accent);}
+#pushHint{margin:0;}

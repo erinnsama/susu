@@ -79,6 +79,7 @@ function boot(){
   render();
   loadAll().catch(handleError);
   showWhoAmI();
+  initPush();
 }
 
 function showWhoAmI(){
@@ -89,6 +90,115 @@ function showWhoAmI(){
     $("userEmail").textContent = me.email || me.name || "";
   }).catch(function(){
     // 登入資訊拿不到就單純不顯示，loadAll 已經會報錯了
+  });
+}
+
+/* ---------- 推播提醒 ---------- */
+// VAPID 公鑰是 base64url，PushManager.subscribe 要吃 Uint8Array
+function urlBase64ToUint8Array(base64String){
+  var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  var raw = atob(base64);
+  var out = new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+function pushSupported(){
+  return "serviceWorker" in navigator && "PushManager" in window && window.isSecureContext;
+}
+// iOS Safari 只有從「加到主畫面」的圖示打開時，推播 API 才真的能用；
+// 直接開網頁分頁的話 PushManager 存在但 subscribe 會直接失敗。
+function isStandalone(){
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function setPushUi(state, label){
+  var btn = $("pushToggleBtn");
+  var hint = $("pushHint");
+  if(!btn) return;
+  if(state==="hide"){
+    btn.hidden = true;
+    hint.hidden = true;
+    return;
+  }
+  if(state==="hint"){
+    btn.hidden = true;
+    hint.hidden = false;
+    hint.textContent = label;
+    return;
+  }
+  btn.hidden = false;
+  hint.hidden = true;
+  btn.setAttribute("data-on", state==="on" ? "1" : "0");
+  $("pushToggleLabel").textContent = label;
+}
+
+function initPush(){
+  if(!pushSupported()){
+    setPushUi("hide");
+    return;
+  }
+  if(!isStandalone()){
+    setPushUi("hint", "把這個網站加到主畫面，並從主畫面圖示打開，才能設定推播提醒");
+    return;
+  }
+  if(Notification.permission === "denied"){
+    setPushUi("hint", "推播權限已被封鎖，請到系統設定重新允許通知");
+    return;
+  }
+  navigator.serviceWorker.register("/sw.js").then(function(reg){
+    return reg.pushManager.getSubscription();
+  }).then(function(sub){
+    setPushUi(sub ? "on" : "off", sub ? "推播提醒已開啟" : "開啟推播提醒");
+  }).catch(function(){
+    setPushUi("hide");
+  });
+}
+
+function togglePush(){
+  var btn = $("pushToggleBtn");
+  var isOn = btn.getAttribute("data-on")==="1";
+  if(isOn) return unsubscribePush();
+  return subscribePush();
+}
+
+function subscribePush(){
+  Notification.requestPermission().then(function(perm){
+    if(perm!=="granted"){
+      setPushUi("hint", "沒有允許通知，推播提醒無法開啟");
+      return null;
+    }
+    return Promise.all([navigator.serviceWorker.ready, api.config()]).then(function(r){
+      var reg = r[0], cfg = r[1];
+      if(!cfg.vapidPublicKey) throw new Error("伺服器尚未設定推播金鑰");
+      return reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(cfg.vapidPublicKey)
+      });
+    }).then(function(sub){
+      return api.pushSubscribe(sub.toJSON());
+    }).then(function(){
+      setPushUi("on", "推播提醒已開啟");
+      toast("推播提醒已開啟");
+    });
+  }).catch(function(err){
+    handleError(err);
+  });
+}
+
+function unsubscribePush(){
+  navigator.serviceWorker.ready.then(function(reg){
+    return reg.pushManager.getSubscription();
+  }).then(function(sub){
+    if(!sub) return;
+    var endpoint = sub.endpoint;
+    return sub.unsubscribe().then(function(){ return api.pushUnsubscribe(endpoint); });
+  }).then(function(){
+    setPushUi("off", "開啟推播提醒");
+    toast("推播提醒已關閉");
+  }).catch(function(err){
+    handleError(err);
   });
 }
 
@@ -413,6 +523,7 @@ function bindStaticHandlers(){
   });
 
   $("todayBtn").addEventListener("click", openTodaySheet);
+  $("pushToggleBtn").addEventListener("click", togglePush);
   $("todayClose").addEventListener("click", closeTodaySheet);
   $("todayOverlay").addEventListener("click", function(e){ if(e.target===$("todayOverlay")) closeTodaySheet(); });
   $("todaySearch").addEventListener("input", renderTodaySheet);
