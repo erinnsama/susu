@@ -133,7 +133,7 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .proj-row input[type="text"]{border:1px solid transparent; background:transparent; font-size:14px; font-weight:600; padding:6px 8px; border-radius:8px; flex:1 1 120px; min-width:0;}
 .proj-row input[type="text"]:hover, .proj-row input[type="text"]:focus{background:var(--bg); border-color:var(--border);}
 .swatches{display:flex; gap:5px;}
-.swatch{width:18px; height:18px; border-radius:50%; border:2px solid transparent;}
+.swatch{display:inline-block; width:18px; height:18px; border-radius:50%; border:2px solid transparent; cursor:pointer; flex:none;}
 .swatch[data-on="1"]{border-color:var(--text);}
 .proj-row .mini-btn{font-size:11.5px; color:var(--text-muted); background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:4px 8px; white-space:nowrap;}
 .proj-row[data-archived="1"]{opacity:.5;}

@@ -582,23 +582,27 @@ function openProjectModal(){
   $("projOverlay").hidden = false;
 }
 function closeProjectModal(){ $("projOverlay").hidden = true; }
+function swatchKeydown(e){
+  if(e.key==="Enter" || e.key===" "){ e.preventDefault(); e.currentTarget.click(); }
+}
 function renderNewProjSwatches(){
   var wrap = $("newProjSwatches");
   wrap.innerHTML = PALETTE.map(function(c){
-    return '<button type="button" class="swatch" data-color="'+c+'" data-on="'+(c===newProjColor?1:0)+'" style="background:'+c+'" aria-label="選擇顏色"></button>';
+    return '<span class="swatch" role="button" tabindex="0" data-color="'+c+'" data-on="'+(c===newProjColor?1:0)+'" style="background:'+c+'" aria-label="選擇顏色"></span>';
   }).join("");
   wrap.querySelectorAll(".swatch").forEach(function(sw){
     sw.addEventListener("click", function(){
       newProjColor = sw.getAttribute("data-color");
       renderNewProjSwatches();
     });
+    sw.addEventListener("keydown", swatchKeydown);
   });
 }
 function renderProjectModal(){
   var wrap = $("projList");
   wrap.innerHTML = projects.map(function(p){
     var swatches = PALETTE.map(function(c){
-      return '<button type="button" class="swatch" data-pid="'+p.id+'" data-color="'+c+'" data-on="'+(c===p.color?1:0)+'" style="background:'+c+'" aria-label="選擇顏色"></button>';
+      return '<span class="swatch" role="button" tabindex="0" data-pid="'+p.id+'" data-color="'+c+'" data-on="'+(c===p.color?1:0)+'" style="background:'+c+'" aria-label="選擇顏色"></span>';
     }).join("");
     return (
       '<div class="proj-row" data-archived="'+(p.archived?1:0)+'">'+
@@ -620,6 +624,7 @@ function renderProjectModal(){
     sw.addEventListener("click", function(){
       store.updateProject(sw.getAttribute("data-pid"), {color:sw.getAttribute("data-color")}).then(renderProjectModal);
     });
+    sw.addEventListener("keydown", swatchKeydown);
   });
   wrap.querySelectorAll("[data-archive]").forEach(function(btn){
     btn.addEventListener("click", function(){
