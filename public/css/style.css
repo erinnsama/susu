@@ -85,12 +85,10 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .cardlist{display:flex; flex-direction:column; gap:10px;}
 .empty-slot{border:1.5px dashed var(--border); border-radius:var(--radius-md); padding:16px 10px; text-align:center; font-size:12.5px; color:var(--text-muted);}
 .add-task{border:1.5px dashed var(--border); background:transparent; border-radius:var(--radius-md); padding:9px; font-size:13px; font-weight:700; color:var(--text-muted); text-align:center;}
-.add-task:hover{border-color:var(--accent); color:var(--accent-strong);}
 
 /* card */
 .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:11px 12px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--shadow); text-align:left; width:100%;}
-.card:hover{border-color:var(--accent);}
-@media (prefers-reduced-motion:no-preference){ .card{transition:border-color .15s ease, transform .15s ease;} .card:hover{transform:translateY(-1px);} }
+@media (prefers-reduced-motion:no-preference){ .card{transition:border-color .15s ease, transform .15s ease;} }
 .card-top{display:flex; align-items:center; gap:6px;}
 .card-top .dot{width:8px; height:8px; border-radius:50%; flex:none;}
 .card-top .proj{font-size:11.5px; color:var(--text-muted); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -102,11 +100,10 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .due.overdue{color:var(--danger); font-weight:700;}
 .due.today{color:var(--accent-strong); font-weight:700;}
 .task-link{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; margin:-5px; border-radius:8px; color:var(--text-muted); flex:none;}
-.task-link:hover, .task-link:active{color:var(--accent-strong); background:var(--surface-2);}
+.task-link:active{color:var(--accent-strong); background:var(--surface-2);}
 .movebtns{display:flex; gap:4px;}
 .movebtns button{width:24px; height:24px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); font-weight:800; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; color:var(--text-muted);}
 .movebtns button:disabled{opacity:.3; cursor:default;}
-.movebtns button:not(:disabled):hover{border-color:var(--accent); color:var(--accent-strong);}
 
 /* sheets / modal */
 .overlay{position:fixed; inset:0; background:rgba(20,12,15,.4); display:flex; align-items:flex-end; justify-content:center; z-index:40; padding:0;}
@@ -127,7 +124,6 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .sheet-actions{display:flex; gap:10px; margin-top:6px;}
 .btn{padding:11px 18px; border-radius:999px; border:1px solid transparent; font-weight:700; font-size:14px;}
 .btn-primary{background:var(--accent); color:var(--on-accent); flex:1;}
-.btn-primary:hover{background:var(--accent-strong);}
 .btn-ghost{background:transparent; border-color:var(--border); color:var(--text-muted);}
 .btn-danger{background:transparent; color:var(--danger); border-color:transparent; margin-right:auto;}
 .close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; color:var(--text-muted); line-height:1;}
@@ -135,7 +131,7 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 /* project manage modal */
 .proj-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--border);}
 .proj-row input[type="text"]{border:1px solid transparent; background:transparent; font-size:14px; font-weight:600; padding:6px 8px; border-radius:8px; flex:1 1 120px; min-width:0;}
-.proj-row input[type="text"]:hover, .proj-row input[type="text"]:focus{background:var(--bg); border-color:var(--border);}
+.proj-row input[type="text"]:focus{background:var(--bg); border-color:var(--border);}
 .swatches{display:flex; gap:5px;}
 .swatch{display:inline-block; width:18px; height:18px; border-radius:50%; border:2px solid transparent; cursor:pointer; flex:none;}
 .swatch[data-on="1"]{border-color:var(--text);}
@@ -190,12 +186,10 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .userchip svg{color:var(--accent); flex:none;}
 .userchip #userEmail{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .userchip .logout{color:var(--accent-strong); font-weight:700; text-decoration:none; border-left:1px solid var(--border); padding-left:8px; flex:none;}
-.userchip .logout:hover{text-decoration:underline;}
 
 /* ---------- 今日任務 ---------- */
 .toolbar{display:flex; gap:10px; flex-wrap:wrap;}
 .btn-today{display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:999px; border:1px solid var(--accent); background:var(--accent); color:var(--on-accent); font-size:14px; font-weight:800; box-shadow:var(--shadow); cursor:pointer;}
-.btn-today:hover{background:var(--accent-strong); border-color:var(--accent-strong);}
 .btn-today .badge{background:rgba(255,255,255,.28); border-radius:999px; padding:1px 9px; font-size:12px; font-weight:700;}
 .btn-today svg{flex:none;}
 
@@ -214,14 +208,31 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .urgent-text{color:var(--danger);}
 .today-btn{width:30px; height:30px; flex:none; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); font-size:17px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer;}
 .today-btn.add{color:var(--accent-strong);}
-.today-btn.add:hover{background:var(--accent-soft); border-color:var(--accent);}
 .today-btn.remove{color:var(--text-muted);}
-.today-btn.remove:hover{color:var(--danger); border-color:var(--danger);}
 #todayPool{max-height:38vh; overflow-y:auto;}
 
 /* 推播提醒開關：關的時候用素色，開了才用強調色，一眼看出目前狀態 */
 #pushToggleBtn[data-on="0"]{background:var(--surface); color:var(--accent-strong); border-color:var(--border);}
-#pushToggleBtn[data-on="0"]:hover{border-color:var(--accent);}
 #pushHint{margin:0;}
 .btn-ghost-inline{background:none; border:none; color:var(--text-muted); font-size:12.5px; text-decoration:underline; padding:4px; align-self:center;}
-.btn-ghost-inline:hover{color:var(--accent-strong);}
+
+/* :hover 只在真的有滑鼠/觸控板的裝置生效。手機上點一下，:hover 會卡住直到
+   點別的地方才解除，尤其 .card 那個位移動畫，點下去畫面像被推了一下、
+   感覺整個在滑動——用 (hover:hover) 把這組效果排除在觸控裝置外就不會了。 */
+@media (hover:hover){
+  .add-task:hover{border-color:var(--accent); color:var(--accent-strong);}
+  .card:hover{border-color:var(--accent);}
+  .task-link:hover{color:var(--accent-strong); background:var(--surface-2);}
+  .movebtns button:not(:disabled):hover{border-color:var(--accent); color:var(--accent-strong);}
+  .btn-primary:hover{background:var(--accent-strong);}
+  .proj-row input[type="text"]:hover{background:var(--bg); border-color:var(--border);}
+  .userchip .logout:hover{text-decoration:underline;}
+  .btn-today:hover{background:var(--accent-strong); border-color:var(--accent-strong);}
+  .today-btn.add:hover{background:var(--accent-soft); border-color:var(--accent);}
+  .today-btn.remove:hover{color:var(--danger); border-color:var(--danger);}
+  #pushToggleBtn[data-on="0"]:hover{border-color:var(--accent);}
+  .btn-ghost-inline:hover{color:var(--accent-strong);}
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){
+  .card:hover{transform:translateY(-1px);}
+}
