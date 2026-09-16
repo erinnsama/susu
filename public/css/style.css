@@ -52,11 +52,12 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 
 /* stats */
 .stats{display:flex; gap:10px; flex-wrap:wrap;}
-.stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 16px; display:flex; flex-direction:column; gap:2px; min-width:92px; box-shadow:var(--shadow);}
+.stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 16px; display:flex; flex-direction:column; gap:2px; min-width:92px; box-shadow:var(--shadow); text-align:left; width:auto;}
 .stat .n{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:22px; font-variant-numeric:tabular-nums;}
 .stat .l{font-size:11px; color:var(--text-muted); letter-spacing:.02em;}
 .stat.danger .n{color:var(--danger);}
 .stat.accent .n{color:var(--accent-strong);}
+.stat[data-active="1"]{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft);}
 
 /* project chips */
 .chiprow{display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; scrollbar-width:thin;}

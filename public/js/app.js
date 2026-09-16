@@ -7,6 +7,7 @@ var PRIORITY_RANK = {high:0, normal:1, low:2};
 var projects = [];
 var tasks = [];
 var activeFilter = null;
+var activeStatFilter = null;
 var editingTaskId = null;
 var editingStatusPreset = "todo";
 var taskStatusValue = "todo";
@@ -243,9 +244,20 @@ function projectById(id){
   for(var i=0;i<projects.length;i++){ if(projects[i].id===id) return projects[i]; }
   return null;
 }
+function matchesStatFilter(t){
+  if(!activeStatFilter) return true;
+  var t0 = todayStr();
+  if(activeStatFilter==="today") return t.dueDate===t0 && t.status!=="done";
+  if(activeStatFilter==="overdue") return t.dueDate && t.dueDate<t0 && t.status!=="done";
+  if(activeStatFilter==="doing") return t.status==="doing";
+  if(activeStatFilter==="open") return t.status!=="done";
+  return true;
+}
 function filteredTasks(){
-  if(!activeFilter) return tasks;
-  return tasks.filter(function(t){ return t.projectId===activeFilter; });
+  return tasks.filter(function(t){
+    if(activeFilter && t.projectId!==activeFilter) return false;
+    return matchesStatFilter(t);
+  });
 }
 function sortTasks(list){
   return list.slice().sort(function(a,b){
@@ -351,6 +363,10 @@ function renderStats(){
   $("statOverdue").querySelector(".n").textContent = overdue;
   $("statDoing").querySelector(".n").textContent = doing;
   $("statOpen").querySelector(".n").textContent = open.length;
+
+  $("statsRow").querySelectorAll("[data-stat]").forEach(function(btn){
+    btn.setAttribute("data-active", btn.getAttribute("data-stat")===activeStatFilter ? "1" : "0");
+  });
 }
 
 function renderChips(){
@@ -420,7 +436,8 @@ function renderBoard(){
     var items = sortTasks(list.filter(function(t){ return t.status===st; }));
     var cap = st.charAt(0).toUpperCase()+st.slice(1);
     var container = $("list"+cap);
-    container.innerHTML = items.length ? items.map(cardHtml).join("") : '<div class="empty-slot">這裡還沒有任務</div>';
+    var emptyMsg = (activeFilter || activeStatFilter) ? "沒有符合篩選條件的任務" : "這裡還沒有任務";
+    container.innerHTML = items.length ? items.map(cardHtml).join("") : '<div class="empty-slot">'+emptyMsg+'</div>';
     $("count"+cap).textContent = items.length;
     $("tabCount"+cap).textContent = items.length;
   });
@@ -497,17 +514,30 @@ function openTaskSheet(id){
 }
 function closeTaskSheet(){ $("taskOverlay").hidden = true; }
 
+function scrollToColumn(status){
+  var idx = STATUSES.indexOf(status);
+  if(idx<0) return;
+  var col = $("board").children[idx];
+  if(!col) return;
+  var behavior = reduceMotion() ? "auto" : "smooth";
+  col.scrollIntoView({behavior:behavior, inline:"start", block:"nearest"});
+}
+
 function bindStaticHandlers(){
   $("board").addEventListener("click", function(e){
     var addBtn = e.target.closest("[data-add]");
     if(addBtn){ editingStatusPreset = addBtn.getAttribute("data-add"); openTaskSheet(null); }
   });
   $("mobileTabs").querySelectorAll("button").forEach(function(btn, i){
-    btn.addEventListener("click", function(){
-      var col = $("board").children[i];
-      var behavior = reduceMotion() ? "auto" : "smooth";
-      col.scrollIntoView({behavior:behavior, inline:"start", block:"nearest"});
-    });
+    btn.addEventListener("click", function(){ scrollToColumn(STATUSES[i]); });
+  });
+  $("statsRow").addEventListener("click", function(e){
+    var btn = e.target.closest("[data-stat]");
+    if(!btn) return;
+    var key = btn.getAttribute("data-stat");
+    activeStatFilter = (activeStatFilter===key) ? null : key;
+    render();
+    if(activeStatFilter==="doing") scrollToColumn("doing");
   });
   var boardEl = $("board");
   var tabBtns = $("mobileTabs").querySelectorAll("button");
