@@ -21,6 +21,12 @@ function todayStr(){
   var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
   return y+"-"+m+"-"+day;
 }
+function tomorrowStr(){
+  var d = new Date();
+  d.setDate(d.getDate()+1);
+  var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+day;
+}
 function fmtToday(){
   var d = new Date();
   var wk = ["日","一","二","三","四","五","六"][d.getDay()];
@@ -81,6 +87,12 @@ function boot(){
   loadAll().catch(handleError);
   showWhoAmI();
   initPush();
+  // 手機把應用程式放到背景很久再切回來時，記憶體裡的 tasks 可能是很久以前載入的舊資料；
+  // 如果這時候編輯任務儲存，會把舊資料的截止日期整包送回去，把其他裝置後來改過的日期蓋回舊值。
+  // 每次切回前景就重新抓一次，降低這個「日期又跳回去」的機率。
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden) loadAll().catch(handleError);
+  });
 }
 
 function showWhoAmI(){
@@ -295,9 +307,13 @@ function todayRowHtml(t, action){
   var color = p ? p.color : "#8C93A6";
   var name = p ? p.name : "未分類";
   var statusLabel = {todo:"待辦", doing:"進行中", done:"已完成"}[t.status] || t.status;
-  var btn = action==="add"
+  var actions = action==="add"
     ? '<button type="button" class="today-btn add" data-add-today="'+t.id+'" aria-label="加入今日任務">＋</button>'
-    : '<button type="button" class="today-btn remove" data-remove-today="'+t.id+'" aria-label="移出今日任務">－</button>';
+    : (
+        '<button type="button" class="today-btn done" data-done-today="'+t.id+'" aria-label="標記已完成">✓</button>'+
+        '<button type="button" class="today-btn postpone" data-postpone-today="'+t.id+'" aria-label="延到明天">→</button>'+
+        '<button type="button" class="today-btn remove" data-remove-today="'+t.id+'" aria-label="移出今日任務">－</button>'
+      );
   return (
     '<div class="today-row">'+
       '<span class="dot" style="background:'+color+'"></span>'+
@@ -308,7 +324,7 @@ function todayRowHtml(t, action){
           (action==="add" && t.dueDate ? ' · 原訂 '+t.dueDate.slice(5).replace("-","/") : '')+
         '</span>'+
       '</div>'+
-      btn+
+      '<div class="today-actions">'+actions+'</div>'+
     '</div>'
   );
 }
@@ -337,6 +353,16 @@ function renderTodaySheet(){
   $("todayList").querySelectorAll("[data-remove-today]").forEach(function(btn){
     btn.addEventListener("click", function(){
       store.updateTask(btn.getAttribute("data-remove-today"), {dueDate:null}).then(renderTodaySheet);
+    });
+  });
+  $("todayList").querySelectorAll("[data-done-today]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      store.updateTask(btn.getAttribute("data-done-today"), {status:"done"}).then(renderTodaySheet);
+    });
+  });
+  $("todayList").querySelectorAll("[data-postpone-today]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      store.updateTask(btn.getAttribute("data-postpone-today"), {dueDate:tomorrowStr()}).then(renderTodaySheet);
     });
   });
   $("todayPool").querySelectorAll("[data-add-today]").forEach(function(btn){
@@ -478,13 +504,12 @@ function setSeg(segId, val){
   seg.querySelectorAll("button").forEach(function(b){ b.setAttribute("data-on", b.getAttribute("data-val")===val?"1":"0"); });
 }
 
-function openTaskSheet(id){
-  var editing = id ? tasks.find(function(x){ return x.id===id; }) : null;
-  if(id && !editing) return;
-  fillProjectSelect(editing ? editing.projectId : null);
+var taskFormTouched = false;
+
+function fillTaskForm(id, t){
+  fillProjectSelect(t ? t.projectId : null);
   var overlay = $("taskOverlay");
-  if(id){
-    var t = editing;
+  if(id && t){
     editingTaskId = id;
     $("taskSheetTitle").textContent = "編輯任務";
     $("task-title").value = t.title||"";
@@ -509,8 +534,26 @@ function openTaskSheet(id){
   }
   setSeg("task-status-seg", taskStatusValue);
   setSeg("task-priority-seg", taskPriorityValue);
+  taskFormTouched = false;
   overlay.hidden = false;
   setTimeout(function(){ $("task-title").focus(); }, 0);
+}
+
+function openTaskSheet(id){
+  if(!id){ fillTaskForm(null, null); return; }
+  var cached = tasks.find(function(x){ return x.id===id; });
+  if(!cached) return;
+  // 先用手上的資料立刻開啟（不用等網路），同時跟伺服器要最新版本——
+  // 這份任務可能是很久以前載入的，這段時間可能已經在別的裝置被改過（例如截止日期），
+  // 不然編輯完儲存時會把舊欄位一起蓋回去，變成「改過的日期又跳回去」。
+  fillTaskForm(id, cached);
+  api.getTask(id).then(function(fresh){
+    // 使用者若已經關掉、換編輯別的任務，或已經開始手動改欄位，就不要把資料蓋掉
+    if(editingTaskId!==id || taskFormTouched) return;
+    var idx = tasks.findIndex(function(x){ return x.id===id; });
+    if(idx>-1) tasks[idx] = fresh;
+    fillTaskForm(id, fresh);
+  }).catch(function(){ /* 拿不到最新版就沿用本機資料，不擋住操作 */ });
 }
 function closeTaskSheet(){ $("taskOverlay").hidden = true; }
 
@@ -558,12 +601,16 @@ function bindStaticHandlers(){
     var b = e.target.closest("button"); if(!b) return;
     taskStatusValue = b.getAttribute("data-val");
     setSeg("task-status-seg", taskStatusValue);
+    taskFormTouched = true;
   });
   $("task-priority-seg").addEventListener("click", function(e){
     var b = e.target.closest("button"); if(!b) return;
     taskPriorityValue = b.getAttribute("data-val");
     setSeg("task-priority-seg", taskPriorityValue);
+    taskFormTouched = true;
   });
+  $("taskForm").addEventListener("input", function(){ taskFormTouched = true; });
+  $("taskForm").addEventListener("change", function(){ taskFormTouched = true; });
   $("taskClose").addEventListener("click", closeTaskSheet);
   $("taskCancel").addEventListener("click", closeTaskSheet);
   $("taskOverlay").addEventListener("click", function(e){ if(e.target===$("taskOverlay")) closeTaskSheet(); });

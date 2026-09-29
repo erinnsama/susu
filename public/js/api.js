@@ -48,6 +48,7 @@ export const api = {
   updateProject: (id, patch) => request(`/projects/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
   deleteProject: (id) => request(`/projects/${id}`, { method: "DELETE" }),
   listTasks: () => request("/tasks"),
+  getTask: (id) => request(`/tasks/${id}`),
   addTask: (data) => request("/tasks", { method: "POST", body: JSON.stringify(data) }),
   updateTask: (id, patch) => request(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
   deleteTask: (id) => request(`/tasks/${id}`, { method: "DELETE" }),

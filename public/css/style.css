@@ -178,6 +178,8 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
   .stat{padding:8px 10px;}
   .stat .l{font-size:10.5px;}
   .userchip #userEmail{max-width:28vw;}
+  .today-btn{width:27px; height:27px; font-size:15px;}
+  .today-btn.postpone{font-size:13px;}
 }
 
 /* ---------- 登入者 ---------- */
@@ -206,9 +208,12 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .today-title{font-size:13.5px; font-weight:500; line-height:1.4;}
 .today-sub{font-size:11px; color:var(--text-muted);}
 .urgent-text{color:var(--danger);}
+.today-actions{display:flex; gap:5px; flex:none;}
 .today-btn{width:30px; height:30px; flex:none; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); font-size:17px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer;}
 .today-btn.add{color:var(--accent-strong);}
 .today-btn.remove{color:var(--text-muted);}
+.today-btn.done{color:var(--status-done);}
+.today-btn.postpone{color:var(--accent-strong); font-size:15px;}
 #todayPool{max-height:38vh; overflow-y:auto;}
 
 /* 推播提醒開關：關的時候用素色，開了才用強調色，一眼看出目前狀態 */
@@ -230,6 +235,8 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
   .btn-today:hover{background:var(--accent-strong); border-color:var(--accent-strong);}
   .today-btn.add:hover{background:var(--accent-soft); border-color:var(--accent);}
   .today-btn.remove:hover{color:var(--danger); border-color:var(--danger);}
+  .today-btn.done:hover{background:color-mix(in srgb, var(--status-done) 16%, transparent); border-color:var(--status-done);}
+  .today-btn.postpone:hover{background:var(--accent-soft); border-color:var(--accent);}
   #pushToggleBtn[data-on="0"]:hover{border-color:var(--accent);}
   .btn-ghost-inline:hover{color:var(--accent-strong);}
 }
