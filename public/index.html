@@ -192,6 +192,12 @@
     <div class="seg" id="report-range-seg">
       <button type="button" data-val="month">本月</button>
       <button type="button" data-val="halfyear">近半年</button>
+      <button type="button" data-val="custom">自訂</button>
+    </div>
+    <div class="report-custom-range" id="reportCustomRange" hidden>
+      <input type="date" id="reportCustomStartInput" aria-label="起始日期">
+      <span>～</span>
+      <input type="date" id="reportCustomEndInput" aria-label="結束日期">
     </div>
     <p class="sheet-hint" id="reportRangeLabel"></p>
 
@@ -215,6 +221,11 @@
     <div class="report-section">
       <div class="today-head"><span id="reportTrendTitle">每週完成數</span></div>
       <div class="trend-chart" id="reportTrend"></div>
+    </div>
+
+    <div class="report-section">
+      <div class="today-head"><span>詳細項目列表</span></div>
+      <div id="reportDetailList"></div>
     </div>
   </div>
 </div>

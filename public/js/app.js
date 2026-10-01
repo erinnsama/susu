@@ -14,6 +14,8 @@ var taskStatusValue = "todo";
 var taskPriorityValue = "normal";
 var newProjColor = PALETTE[0];
 var reportMode = "month";
+var reportCustomStart = currentHalfStart();
+var reportCustomEnd = todayStr();
 
 var $ = function(id){ return document.getElementById(id); };
 
@@ -31,6 +33,13 @@ function tomorrowStr(){
 // 要先轉成使用者所在時區（她都在台北）的在地日期，不然晚上的紀錄會被歸到隔天的 UTC 日期去。
 function localDateStr(iso){
   return iso ? dateStr(new Date(iso)) : null;
+}
+// 自訂區間第一次切換時的預設值：抓現在所在的那個半年（1-6月或7-12月）的第一天到今天，
+// 對應她實際在用的「H1/H2 工作回顧」用途，不用每次都自己手動選日期。
+function currentHalfStart(){
+  var now = new Date();
+  var startMonth = now.getMonth()<6 ? 0 : 6;
+  return dateStr(new Date(now.getFullYear(), startMonth, 1));
 }
 function fmtToday(){
   var d = new Date();
@@ -386,10 +395,16 @@ function openTodaySheet(){
 function closeTodaySheet(){ $("todayOverlay").hidden = true; }
 
 /* ---------- 工作回顧 ---------- */
-// 月：本月 1 號到今天。半年：含本月在內往前推 6 個整月的 1 號到今天。
-// 兩種都用「本地日曆月份」切，不是滾動 30/180 天，這樣「本月」才會跟她腦中想的月份對得上。
+// 月：本月 1 號到今天。半年：含本月在內往前推 6 個整月的 1 號到今天。自訂：她自己選的區間。
+// 前兩種都用「本地日曆月份」切，不是滾動 30/180 天，這樣「本月」才會跟她腦中想的月份對得上。
 function reportRange(mode){
   var now = new Date();
+  if(mode==="custom"){
+    var s = reportCustomStart || currentHalfStart();
+    var e = reportCustomEnd || todayStr();
+    if(e<s) e = s;
+    return {startStr:s, endStr:e};
+  }
   if(mode==="halfyear"){
     var start6 = new Date(now.getFullYear(), now.getMonth()-5, 1);
     return {startStr:dateStr(start6), endStr:todayStr()};
@@ -399,25 +414,31 @@ function reportRange(mode){
 }
 function inRange(s, range){ return s!=null && s>=range.startStr && s<=range.endStr; }
 
-// 本月拆成每週（1-7/8-14/...），半年拆成 6 個日曆月，兩種都是「完成數」當柱子高度。
-function reportBuckets(mode, range){
+// 區間長度決定要切成「每週」還是「每月」當柱子，不是跟著 month/halfyear/custom 這個選項硬綁——
+// 這樣「自訂」選一個很短或很長的區間時，柱子數量才會跟著給出合理的結果，不用另外為 custom 想規則。
+function reportBuckets(range){
+  var start = new Date(range.startStr+"T00:00:00");
+  var end = new Date(range.endStr+"T00:00:00");
+  var spanDays = Math.round((end-start)/86400000)+1;
   var buckets = [];
-  if(mode==="halfyear"){
-    var now = new Date();
-    for(var i=5;i>=0;i--){
-      var m = new Date(now.getFullYear(), now.getMonth()-i, 1);
-      var mEnd = new Date(m.getFullYear(), m.getMonth()+1, 0);
-      buckets.push({label:(m.getMonth()+1)+"月", startStr:dateStr(m), endStr:dateStr(mEnd)<range.endStr?dateStr(mEnd):range.endStr});
+  if(spanDays>45){
+    var cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    var endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    while(cursor<=endMonth){
+      var mEnd = new Date(cursor.getFullYear(), cursor.getMonth()+1, 0);
+      var bStart = dateStr(cursor)<range.startStr ? range.startStr : dateStr(cursor);
+      var bEnd = dateStr(mEnd)<range.endStr ? dateStr(mEnd) : range.endStr;
+      buckets.push({label:(cursor.getMonth()+1)+"月", startStr:bStart, endStr:bEnd});
+      cursor.setMonth(cursor.getMonth()+1);
     }
   } else {
-    var start = new Date(range.startStr+"T00:00:00");
-    var cursor = new Date(start);
+    var cursor2 = new Date(start);
     var weekNo = 1;
-    while(dateStr(cursor)<=range.endStr){
-      var wEnd = new Date(cursor); wEnd.setDate(wEnd.getDate()+6);
+    while(dateStr(cursor2)<=range.endStr){
+      var wEnd = new Date(cursor2); wEnd.setDate(wEnd.getDate()+6);
       var wEndStr = dateStr(wEnd)<range.endStr ? dateStr(wEnd) : range.endStr;
-      buckets.push({label:"第"+weekNo+"週", startStr:dateStr(cursor), endStr:wEndStr});
-      cursor.setDate(cursor.getDate()+7);
+      buckets.push({label:"第"+weekNo+"週", startStr:dateStr(cursor2), endStr:wEndStr});
+      cursor2.setDate(cursor2.getDate()+7);
       weekNo++;
     }
   }
@@ -466,6 +487,52 @@ function reportPriorityHtml(doneInRange){
   $("reportPriorityLegend").innerHTML = total ? legend : '<span>這段期間還沒有完成任何任務</span>';
 }
 
+var STATUS_MARK_LABEL = {todo:"待辦", doing:"進行中", done:"完成"};
+// 詳細列表：仿她附的 Excel 格式（專案當項目、量化完成度、底下條列說明），
+// 不是只列「完成的」——進行中/待辦的任務也列出來才看得出「量化」的分母，呼應她原本表格裡
+// 「15% (進行中)」這種還沒做完也要寫出來的習慣。
+function reportDetailHtml(range){
+  var touched = tasks.filter(function(t){
+    return inRange(localDateStr(t.createdAt), range) || (t.completedAt && inRange(localDateStr(t.completedAt), range));
+  });
+  var byProject = {};
+  touched.forEach(function(t){
+    var key = t.projectId || "__none__";
+    (byProject[key] = byProject[key] || []).push(t);
+  });
+  var rows = Object.keys(byProject).map(function(key){
+    var list = byProject[key];
+    var done = list.filter(function(t){ return t.status==="done"; });
+    var p = key==="__none__" ? null : projectById(key);
+    var items = list.slice().sort(function(a,b){
+      return ((a.completedAt||a.createdAt)||"").localeCompare((b.completedAt||b.createdAt)||"");
+    });
+    return {name:p?p.name:"未分類", color:p?p.color:"#8C93A6", total:list.length, done:done.length, items:items};
+  }).sort(function(a,b){ return b.done-a.done || b.total-a.total; });
+
+  if(!rows.length) return '<div class="empty-slot small">這段期間還沒有相關任務</div>';
+
+  return rows.map(function(r, idx){
+    var pct = r.total ? Math.round(r.done/r.total*100) : 0;
+    var itemsHtml = r.items.map(function(t){
+      var line = escapeHtml(t.title);
+      if(t.notes) line += '：'+escapeHtml(t.notes).replace(/\n/g, "<br>");
+      return '<li><span class="detail-mark detail-mark-'+t.status+'">'+STATUS_MARK_LABEL[t.status]+'</span>'+line+'</li>';
+    }).join("");
+    return (
+      '<div class="detail-item">'+
+        '<div class="detail-head">'+
+          '<span class="detail-idx mono">'+(idx+1)+'</span>'+
+          '<span class="dot" style="background:'+r.color+'"></span>'+
+          '<span class="detail-name">'+escapeHtml(r.name)+'</span>'+
+          '<span class="detail-pct mono">'+r.done+'/'+r.total+'（'+pct+'%）</span>'+
+        '</div>'+
+        '<ul class="detail-list">'+itemsHtml+'</ul>'+
+      '</div>'
+    );
+  }).join("");
+}
+
 function reportTrendHtml(buckets, doneInRange){
   var counts = buckets.map(function(b){
     return doneInRange.filter(function(t){ return inRange(localDateStr(t.completedAt), b); }).length;
@@ -485,6 +552,11 @@ function reportTrendHtml(buckets, doneInRange){
 
 function renderReportSheet(){
   setSeg("report-range-seg", reportMode);
+  $("reportCustomRange").hidden = reportMode!=="custom";
+  if(reportMode==="custom"){
+    $("reportCustomStartInput").value = reportCustomStart;
+    $("reportCustomEndInput").value = reportCustomEnd;
+  }
   var range = reportRange(reportMode);
   $("reportRangeLabel").textContent = range.startStr.replace(/-/g,"/") + " ～ " + range.endStr.replace(/-/g,"/");
 
@@ -499,9 +571,11 @@ function renderReportSheet(){
   $("reportProjectBars").innerHTML = reportProjectBarsHtml(doneInRange);
   reportPriorityHtml(doneInRange);
 
-  $("reportTrendTitle").textContent = reportMode==="halfyear" ? "每月完成數" : "每週完成數";
-  var buckets = reportBuckets(reportMode, range);
+  var buckets = reportBuckets(range);
+  $("reportTrendTitle").textContent = (buckets.length && buckets[0].label.indexOf("週")>-1) ? "每週完成數" : "每月完成數";
   $("reportTrend").innerHTML = reportTrendHtml(buckets, doneInRange);
+
+  $("reportDetailList").innerHTML = reportDetailHtml(range);
 }
 
 function openReportSheet(){
@@ -785,6 +859,14 @@ function bindStaticHandlers(){
   $("report-range-seg").addEventListener("click", function(e){
     var b = e.target.closest("button"); if(!b) return;
     reportMode = b.getAttribute("data-val");
+    renderReportSheet();
+  });
+  $("reportCustomStartInput").addEventListener("change", function(){
+    if(this.value) reportCustomStart = this.value;
+    renderReportSheet();
+  });
+  $("reportCustomEndInput").addEventListener("change", function(){
+    if(this.value) reportCustomEnd = this.value;
     renderReportSheet();
   });
 
