@@ -491,7 +491,8 @@ var STATUS_MARK_LABEL = {todo:"待辦", doing:"進行中", done:"完成"};
 // 詳細列表：仿她附的 Excel 格式（專案當項目、量化完成度、底下條列說明），
 // 不是只列「完成的」——進行中/待辦的任務也列出來才看得出「量化」的分母，呼應她原本表格裡
 // 「15% (進行中)」這種還沒做完也要寫出來的習慣。
-function reportDetailHtml(range){
+// 拆成 rows（純資料）跟 Html（畫面），這樣複製文字摘要才能共用同一份分組邏輯，不用重算一次。
+function reportDetailRows(range){
   var touched = tasks.filter(function(t){
     return inRange(localDateStr(t.createdAt), range) || (t.completedAt && inRange(localDateStr(t.completedAt), range));
   });
@@ -500,7 +501,7 @@ function reportDetailHtml(range){
     var key = t.projectId || "__none__";
     (byProject[key] = byProject[key] || []).push(t);
   });
-  var rows = Object.keys(byProject).map(function(key){
+  return Object.keys(byProject).map(function(key){
     var list = byProject[key];
     var done = list.filter(function(t){ return t.status==="done"; });
     var p = key==="__none__" ? null : projectById(key);
@@ -509,7 +510,9 @@ function reportDetailHtml(range){
     });
     return {name:p?p.name:"未分類", color:p?p.color:"#8C93A6", total:list.length, done:done.length, items:items};
   }).sort(function(a,b){ return b.done-a.done || b.total-a.total; });
+}
 
+function reportDetailHtml(rows){
   if(!rows.length) return '<div class="empty-slot small">這段期間還沒有相關任務</div>';
 
   return rows.map(function(r, idx){
@@ -531,6 +534,65 @@ function reportDetailHtml(range){
       '</div>'
     );
   }).join("");
+}
+
+// 純文字摘要，給「複製文字摘要」按鈕用——她複製後貼到跟 Claude 的對話，
+// 由 Claude 寫成正式文件，所以格式比照 Excel 的條列習慣，不是給畫面顯示用的 HTML。
+function buildReportSummaryText(){
+  var range = reportRange(reportMode);
+  var doneInRange = tasks.filter(function(t){ return t.completedAt && inRange(localDateStr(t.completedAt), range); });
+  var addedInRange = tasks.filter(function(t){ return inRange(localDateStr(t.createdAt), range); });
+  var urgentDone = doneInRange.filter(function(t){ return t.priority==="high"; });
+  var rows = reportDetailRows(range);
+
+  var lines = [];
+  lines.push("工作回顧　"+range.startStr.replace(/-/g,"/")+" ～ "+range.endStr.replace(/-/g,"/"));
+  lines.push("完成任務 "+doneInRange.length+"　新增任務 "+addedInRange.length+"　急件完成 "+urgentDone.length);
+  lines.push("");
+  if(!rows.length){
+    lines.push("（這段期間還沒有相關任務）");
+  }
+  rows.forEach(function(r, idx){
+    var pct = r.total ? Math.round(r.done/r.total*100) : 0;
+    lines.push((idx+1)+". "+r.name+"　"+r.done+"/"+r.total+" 已完成（"+pct+"%）");
+    r.items.forEach(function(t){
+      var line = "   - ["+STATUS_MARK_LABEL[t.status]+"] "+t.title;
+      if(t.notes) line += "："+t.notes.replace(/\n/g, "；");
+      lines.push(line);
+    });
+    lines.push("");
+  });
+  return lines.join("\n").trim()+"\n";
+}
+
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  // iOS 舊版 Safari／非安全情境拿不到 navigator.clipboard，退回傳統的隱藏 textarea + execCommand。
+  return new Promise(function(resolve, reject){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if(ok) resolve(); else reject(new Error("execCommand 失敗"));
+    }catch(err){ reject(err); }
+  });
+}
+
+function copyReportSummary(){
+  var text = buildReportSummaryText();
+  copyToClipboard(text).then(function(){
+    toast("已複製，可以貼給我了");
+  }).catch(function(){
+    toast("複製失敗，請手動選取文字");
+  });
 }
 
 function reportTrendHtml(buckets, doneInRange){
@@ -575,7 +637,7 @@ function renderReportSheet(){
   $("reportTrendTitle").textContent = (buckets.length && buckets[0].label.indexOf("週")>-1) ? "每週完成數" : "每月完成數";
   $("reportTrend").innerHTML = reportTrendHtml(buckets, doneInRange);
 
-  $("reportDetailList").innerHTML = reportDetailHtml(range);
+  $("reportDetailList").innerHTML = reportDetailHtml(reportDetailRows(range));
 }
 
 function openReportSheet(){
@@ -869,6 +931,7 @@ function bindStaticHandlers(){
     if(this.value) reportCustomEnd = this.value;
     renderReportSheet();
   });
+  $("reportCopyBtn").addEventListener("click", copyReportSummary);
 
   $("projClose").addEventListener("click", closeProjectModal);
   $("projOverlay").addEventListener("click", function(e){ if(e.target===$("projOverlay")) closeProjectModal(); });
