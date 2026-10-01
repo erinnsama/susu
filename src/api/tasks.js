@@ -24,7 +24,8 @@ function rowToTask(r) {
     notes: r.notes,
     link: r.link,
     createdAt: r.created_at,
-    updatedAt: r.updated_at
+    updatedAt: r.updated_at,
+    completedAt: r.completed_at
   };
 }
 
@@ -111,22 +112,24 @@ export async function handleTasks(request, env, url) {
 
     const tid = genId();
     const ts = nowIso();
+    const initialStatus = body.status || "todo";
     await db
       .prepare(
-        `INSERT INTO tasks (id, title, project_id, status, due_date, priority, notes, link, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO tasks (id, title, project_id, status, due_date, priority, notes, link, created_at, updated_at, completed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
         tid,
         String(body.title).trim(),
         body.projectId || null,
-        body.status || "todo",
+        initialStatus,
         body.dueDate || null,
         body.priority || "normal",
         body.notes || "",
         body.link ? String(body.link).trim() : null,
         ts,
-        ts
+        ts,
+        initialStatus === "done" ? ts : null
       )
       .run();
     const row = await db.prepare("SELECT * FROM tasks WHERE id = ?").bind(tid).first();
@@ -142,7 +145,7 @@ export async function handleTasks(request, env, url) {
       return badRequest("指定的專案不存在");
     }
 
-    const existing = await db.prepare("SELECT id FROM tasks WHERE id = ?").bind(id).first();
+    const existing = await db.prepare("SELECT id, status FROM tasks WHERE id = ?").bind(id).first();
     if (!existing) return json({ error: "找不到這個任務" }, 404);
 
     const fields = [];
@@ -155,6 +158,12 @@ export async function handleTasks(request, env, url) {
       else if (key === "projectId") values.push(body[key] || null);
       else if (key === "link") values.push(body[key] ? String(body[key]).trim() : null);
       else values.push(body[key]);
+    }
+    // completed_at 專門記完成的那一刻，不能讓「改標題/備註」之類的其他編輯動作把它帶歪，
+    // 所以只在 status 真的跨進/跨出 done 時才動它，而且是跟著 status 的轉換判斷，不是跟著有沒有傳這個欄位。
+    if (body.status !== undefined && body.status !== existing.status) {
+      fields.push("completed_at = ?");
+      values.push(body.status === "done" ? nowIso() : null);
     }
     if (fields.length) {
       fields.push("updated_at = ?");

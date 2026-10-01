@@ -52,6 +52,10 @@
       今日任務
       <span class="badge mono" id="todayCount">0</span>
     </button>
+    <button type="button" class="btn-today ghost-today" id="reportBtn">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 3a1 1 0 0 1 1 1v15h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm13.5 3a1 1 0 0 1 1 1v9a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1zm-5 4a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm-5 3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1z" fill="currentColor"/></svg>
+      工作回顧
+    </button>
     <button type="button" class="btn-today" id="pushToggleBtn" hidden>
       <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 2a1 1 0 0 1 1 1v1.06A7.002 7.002 0 0 1 19 11v3.586l1.707 1.707A1 1 0 0 1 20 18H4a1 1 0 0 1-.707-1.707L5 14.586V11a7.002 7.002 0 0 1 6-6.94V3a1 1 0 0 1 1-1zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z" fill="currentColor"/></svg>
       <span id="pushToggleLabel">開啟推播提醒</span>
@@ -175,6 +179,42 @@
         <button type="button" class="btn btn-primary" id="newProjAdd" style="flex:none;">新增</button>
       </div>
       <div class="swatches" id="newProjSwatches"></div>
+    </div>
+  </div>
+</div>
+
+<!-- report sheet -->
+<div class="overlay" id="reportOverlay" hidden>
+  <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="reportSheetTitle">
+    <button class="close-x" id="reportClose" aria-label="關閉">✕</button>
+    <h3 id="reportSheetTitle">工作回顧</h3>
+
+    <div class="seg" id="report-range-seg">
+      <button type="button" data-val="month">本月</button>
+      <button type="button" data-val="halfyear">近半年</button>
+    </div>
+    <p class="sheet-hint" id="reportRangeLabel"></p>
+
+    <div class="stats report-stats">
+      <div class="stat accent"><span class="n mono" id="reportDoneCount">0</span><span class="l">完成任務</span></div>
+      <div class="stat"><span class="n mono" id="reportAddedCount">0</span><span class="l">新增任務</span></div>
+      <div class="stat danger"><span class="n mono" id="reportUrgentCount">0</span><span class="l">急件完成</span></div>
+    </div>
+
+    <div class="report-section">
+      <div class="today-head"><span>各專案完成數</span></div>
+      <div id="reportProjectBars"></div>
+    </div>
+
+    <div class="report-section">
+      <div class="today-head"><span>優先度組成</span></div>
+      <div class="priority-bar" id="reportPriorityBar"></div>
+      <div class="priority-legend" id="reportPriorityLegend"></div>
+    </div>
+
+    <div class="report-section">
+      <div class="today-head"><span id="reportTrendTitle">每週完成數</span></div>
+      <div class="trend-chart" id="reportTrend"></div>
     </div>
   </div>
 </div>

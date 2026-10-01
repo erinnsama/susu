@@ -13,19 +13,24 @@ var editingStatusPreset = "todo";
 var taskStatusValue = "todo";
 var taskPriorityValue = "normal";
 var newProjColor = PALETTE[0];
+var reportMode = "month";
 
 var $ = function(id){ return document.getElementById(id); };
 
-function todayStr(){
-  var d = new Date();
+function dateStr(d){
   var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
   return y+"-"+m+"-"+day;
 }
+function todayStr(){ return dateStr(new Date()); }
 function tomorrowStr(){
   var d = new Date();
   d.setDate(d.getDate()+1);
-  var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
-  return y+"-"+m+"-"+day;
+  return dateStr(d);
+}
+// completedAt/createdAt 是伺服器存的 UTC ISO 字串，拿來跟「今天」比對日期區間時
+// 要先轉成使用者所在時區（她都在台北）的在地日期，不然晚上的紀錄會被歸到隔天的 UTC 日期去。
+function localDateStr(iso){
+  return iso ? dateStr(new Date(iso)) : null;
 }
 function fmtToday(){
   var d = new Date();
@@ -289,6 +294,7 @@ function render(){
   renderBoard();
   renderTodayBadge();
   if(!$("todayOverlay").hidden) renderTodaySheet();
+  if(!$("reportOverlay").hidden) renderReportSheet();
 }
 
 /* ---------- 今日任務 ---------- */
@@ -378,6 +384,131 @@ function openTodaySheet(){
   $("todayOverlay").hidden = false;
 }
 function closeTodaySheet(){ $("todayOverlay").hidden = true; }
+
+/* ---------- 工作回顧 ---------- */
+// 月：本月 1 號到今天。半年：含本月在內往前推 6 個整月的 1 號到今天。
+// 兩種都用「本地日曆月份」切，不是滾動 30/180 天，這樣「本月」才會跟她腦中想的月份對得上。
+function reportRange(mode){
+  var now = new Date();
+  if(mode==="halfyear"){
+    var start6 = new Date(now.getFullYear(), now.getMonth()-5, 1);
+    return {startStr:dateStr(start6), endStr:todayStr()};
+  }
+  var start1 = new Date(now.getFullYear(), now.getMonth(), 1);
+  return {startStr:dateStr(start1), endStr:todayStr()};
+}
+function inRange(s, range){ return s!=null && s>=range.startStr && s<=range.endStr; }
+
+// 本月拆成每週（1-7/8-14/...），半年拆成 6 個日曆月，兩種都是「完成數」當柱子高度。
+function reportBuckets(mode, range){
+  var buckets = [];
+  if(mode==="halfyear"){
+    var now = new Date();
+    for(var i=5;i>=0;i--){
+      var m = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      var mEnd = new Date(m.getFullYear(), m.getMonth()+1, 0);
+      buckets.push({label:(m.getMonth()+1)+"月", startStr:dateStr(m), endStr:dateStr(mEnd)<range.endStr?dateStr(mEnd):range.endStr});
+    }
+  } else {
+    var start = new Date(range.startStr+"T00:00:00");
+    var cursor = new Date(start);
+    var weekNo = 1;
+    while(dateStr(cursor)<=range.endStr){
+      var wEnd = new Date(cursor); wEnd.setDate(wEnd.getDate()+6);
+      var wEndStr = dateStr(wEnd)<range.endStr ? dateStr(wEnd) : range.endStr;
+      buckets.push({label:"第"+weekNo+"週", startStr:dateStr(cursor), endStr:wEndStr});
+      cursor.setDate(cursor.getDate()+7);
+      weekNo++;
+    }
+  }
+  return buckets;
+}
+
+function reportProjectBarsHtml(doneInRange){
+  var counts = {};
+  doneInRange.forEach(function(t){
+    var key = t.projectId || "__none__";
+    counts[key] = (counts[key]||0) + 1;
+  });
+  var rows = Object.keys(counts).map(function(key){
+    var p = key==="__none__" ? null : projectById(key);
+    return {name:p?p.name:"未分類", color:p?p.color:"#8C93A6", count:counts[key]};
+  }).sort(function(a,b){ return b.count-a.count; });
+  if(!rows.length) return '<div class="empty-slot small">這段期間還沒有完成任何任務</div>';
+  var max = Math.max.apply(null, rows.map(function(r){ return r.count; }));
+  return rows.map(function(r){
+    var pct = Math.round(r.count/max*100);
+    return (
+      '<div class="bar-row">'+
+        '<span class="dot" style="background:'+r.color+'"></span>'+
+        '<span class="bar-label">'+escapeHtml(r.name)+'</span>'+
+        '<span class="bar-track"><span class="bar-fill" style="width:'+pct+'%;background:'+r.color+'"></span></span>'+
+        '<span class="bar-count mono">'+r.count+'</span>'+
+      '</div>'
+    );
+  }).join("");
+}
+
+var PRIORITY_COLOR = {high:"var(--danger)", normal:"var(--accent)", low:"var(--status-todo)"};
+var PRIORITY_LABEL = {high:"高", normal:"一般", low:"低"};
+function reportPriorityHtml(doneInRange){
+  var counts = {high:0, normal:0, low:0};
+  doneInRange.forEach(function(t){ counts[t.priority]=(counts[t.priority]||0)+1; });
+  var total = doneInRange.length;
+  var bar = "", legend = "";
+  ["high","normal","low"].forEach(function(k){
+    if(!total || !counts[k]) return;
+    var pct = (counts[k]/total*100).toFixed(2);
+    bar += '<span class="priority-seg" style="width:'+pct+'%;background:'+PRIORITY_COLOR[k]+'"></span>';
+    legend += '<span><span class="dot" style="background:'+PRIORITY_COLOR[k]+'"></span>'+PRIORITY_LABEL[k]+' '+counts[k]+'</span>';
+  });
+  $("reportPriorityBar").innerHTML = total ? bar : "";
+  $("reportPriorityLegend").innerHTML = total ? legend : '<span>這段期間還沒有完成任何任務</span>';
+}
+
+function reportTrendHtml(buckets, doneInRange){
+  var counts = buckets.map(function(b){
+    return doneInRange.filter(function(t){ return inRange(localDateStr(t.completedAt), b); }).length;
+  });
+  var max = Math.max.apply(null, counts.concat([1]));
+  return buckets.map(function(b,i){
+    var pct = Math.round(counts[i]/max*100);
+    return (
+      '<div class="trend-bar">'+
+        '<span class="trend-value">'+counts[i]+'</span>'+
+        '<span class="trend-track"><span class="trend-fill" style="height:'+pct+'%"></span></span>'+
+        '<span class="trend-label">'+b.label+'</span>'+
+      '</div>'
+    );
+  }).join("");
+}
+
+function renderReportSheet(){
+  setSeg("report-range-seg", reportMode);
+  var range = reportRange(reportMode);
+  $("reportRangeLabel").textContent = range.startStr.replace(/-/g,"/") + " ～ " + range.endStr.replace(/-/g,"/");
+
+  var doneInRange = tasks.filter(function(t){ return t.completedAt && inRange(localDateStr(t.completedAt), range); });
+  var addedInRange = tasks.filter(function(t){ return inRange(localDateStr(t.createdAt), range); });
+  var urgentDone = doneInRange.filter(function(t){ return t.priority==="high"; });
+
+  $("reportDoneCount").textContent = doneInRange.length;
+  $("reportAddedCount").textContent = addedInRange.length;
+  $("reportUrgentCount").textContent = urgentDone.length;
+
+  $("reportProjectBars").innerHTML = reportProjectBarsHtml(doneInRange);
+  reportPriorityHtml(doneInRange);
+
+  $("reportTrendTitle").textContent = reportMode==="halfyear" ? "每月完成數" : "每週完成數";
+  var buckets = reportBuckets(reportMode, range);
+  $("reportTrend").innerHTML = reportTrendHtml(buckets, doneInRange);
+}
+
+function openReportSheet(){
+  renderReportSheet();
+  $("reportOverlay").hidden = false;
+}
+function closeReportSheet(){ $("reportOverlay").hidden = true; }
 
 function renderStats(){
   var t = todayStr();
@@ -647,6 +778,15 @@ function bindStaticHandlers(){
   $("todayClose").addEventListener("click", closeTodaySheet);
   $("todayOverlay").addEventListener("click", function(e){ if(e.target===$("todayOverlay")) closeTodaySheet(); });
   $("todaySearch").addEventListener("input", renderTodaySheet);
+
+  $("reportBtn").addEventListener("click", openReportSheet);
+  $("reportClose").addEventListener("click", closeReportSheet);
+  $("reportOverlay").addEventListener("click", function(e){ if(e.target===$("reportOverlay")) closeReportSheet(); });
+  $("report-range-seg").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    reportMode = b.getAttribute("data-val");
+    renderReportSheet();
+  });
 
   $("projClose").addEventListener("click", closeProjectModal);
   $("projOverlay").addEventListener("click", function(e){ if(e.target===$("projOverlay")) closeProjectModal(); });
