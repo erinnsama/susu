@@ -646,6 +646,171 @@ function openReportSheet(){
 }
 function closeReportSheet(){ $("reportOverlay").hidden = true; }
 
+/* ---------- 一周進度 ---------- */
+// 週一到週日為一週（在地日期）。草稿 = 上一份「實際上傳版本」的 [下周進度] 接續 + 本週完成/進行中的任務，
+// 她改完交給主管後把最終版貼回「實際上傳版本」存起來，下週就讀那份接續，不是讀草稿。
+var weeklyReports = [];
+var weeklyStart = mondayOf(todayStr());
+var WEEKLY_EXCLUDE_KEY = "weeklyExcludedProjects";
+
+function addDays(ds, n){
+  var d = new Date(ds+"T00:00:00");
+  d.setDate(d.getDate()+n);
+  return dateStr(d);
+}
+function mondayOf(ds){
+  var d = new Date(ds+"T00:00:00");
+  return addDays(ds, -((d.getDay()+6)%7));
+}
+function weeklyExcluded(){
+  try{ return JSON.parse(localStorage.getItem(WEEKLY_EXCLUDE_KEY)||"[]"); }catch(e){ return []; }
+}
+function setWeeklyExcluded(list){
+  try{ localStorage.setItem(WEEKLY_EXCLUDE_KEY, JSON.stringify(list)); }catch(e){}
+}
+function weeklyReportFor(ws){
+  return weeklyReports.filter(function(r){ return r.weekStart===ws; })[0] || null;
+}
+// 上一份有內容的實際上傳版本，不限定剛好是上週——中間有一週沒寫也接得起來。
+function weeklyBaseReport(ws){
+  return weeklyReports.filter(function(r){ return r.weekStart<ws && r.finalText.trim(); })
+    .sort(function(a,b){ return b.weekStart.localeCompare(a.weekStart); })[0] || null;
+}
+
+var WEEKLY_HEADER = /^\s*\[(本|下)[周週]進度\]/;
+function parseNextWeekLines(text){
+  var out = [], inNext = false;
+  String(text||"").split(/\r?\n/).forEach(function(line){
+    var m = line.match(WEEKLY_HEADER);
+    if(m){ inNext = m[1]==="下"; return; }
+    if(!inNext) return;
+    var name = line.replace(/\[[^\]]*\]/g, "").trim();
+    if(name) out.push(name);
+  });
+  return out;
+}
+function weeklyKey(s){
+  return String(s||"").replace(/[（(][^）)]*[）)]/g, "").replace(/\s+/g, "").toLowerCase();
+}
+function findTaskForLine(name, pool){
+  var k = weeklyKey(name);
+  if(k.length<2) return null;
+  return pool.filter(function(t){
+    var tk = weeklyKey(t.title);
+    return tk.length>=2 && (tk.indexOf(k)>-1 || k.indexOf(tk)>-1);
+  })[0] || null;
+}
+
+function buildWeeklyDraft(ws){
+  var we = addDays(ws, 6), nextEnd = addDays(ws, 13);
+  var excluded = weeklyExcluded();
+  var pool = tasks.filter(function(t){ return excluded.indexOf(t.projectId||"__none__")===-1; });
+  var used = {}, thisWeek = [], nextWeek = [], nextNames = {};
+  function pushNext(name, t){
+    if(t){ if(used["n"+t.id]) return; used["n"+t.id] = 1; }
+    var k = weeklyKey(name);
+    if(nextNames[k]) return;
+    nextNames[k] = 1;
+    nextWeek.push(name);
+  }
+  function doneBy(t){ return t.status==="done" && t.completedAt && localDateStr(t.completedAt)<=we; }
+
+  var base = weeklyBaseReport(ws);
+  if(base){
+    parseNextWeekLines(base.finalText).forEach(function(name){
+      var t = findTaskForLine(name, pool.filter(function(x){ return !used[x.id]; }));
+      if(t) used[t.id] = 1;
+      var finished = t && doneBy(t);
+      thisWeek.push(name+(finished ? " [已完成]" : " [進行中]"));
+      if(!finished) pushNext(name, t);
+    });
+  }
+  pool.filter(function(t){
+    return !used[t.id] && t.completedAt && inRange(localDateStr(t.completedAt), {startStr:ws, endStr:we});
+  }).sort(function(a,b){ return a.completedAt.localeCompare(b.completedAt); })
+    .forEach(function(t){ used[t.id] = 1; thisWeek.push(t.title+" [已完成]"); });
+  pool.filter(function(t){ return !used[t.id] && t.status==="doing"; })
+    .forEach(function(t){ used[t.id] = 1; thisWeek.push(t.title+" [進行中]"); });
+
+  pool.filter(function(t){
+    return t.status==="doing" || (t.status==="todo" && t.dueDate && t.dueDate<=nextEnd);
+  }).sort(function(a,b){ return (a.dueDate||"9999").localeCompare(b.dueDate||"9999"); })
+    .forEach(function(t){ pushNext(t.title, t); });
+
+  return "[本周進度]\n"+thisWeek.join("\n")+"\n[下周進度]\n"+nextWeek.join("\n")+"\n";
+}
+
+function renderWeeklyProjChips(){
+  var excluded = weeklyExcluded();
+  var list = visibleProjects().map(function(p){ return {id:p.id, name:p.name, color:p.color}; });
+  if(tasks.some(function(t){ return !t.projectId; })) list.push({id:"__none__", name:"未分類", color:"#8C93A6"});
+  $("weeklyProjChips").innerHTML = list.map(function(p){
+    return '<button type="button" class="chip" data-proj="'+p.id+'" data-off="'+(excluded.indexOf(p.id)>-1?1:0)+'"><span class="dot" style="background:'+p.color+'"></span>'+escapeHtml(p.name)+'</button>';
+  }).join("");
+}
+
+function renderWeeklySheet(regenerate){
+  var we = addDays(weeklyStart, 6);
+  $("weeklyRangeLabel").textContent = weeklyStart.replace(/-/g,"/")+" ～ "+we.slice(5).replace(/-/g,"/");
+  $("weeklyNext").disabled = weeklyStart>=mondayOf(todayStr());
+  var base = weeklyBaseReport(weeklyStart);
+  $("weeklyBaseLabel").textContent = base
+    ? "接續 "+base.weekStart.replace(/-/g,"/")+" 那週的實際上傳版本"
+    : "還沒有之前的實際上傳版本，只依任務狀態產生";
+  renderWeeklyProjChips();
+  if(regenerate) $("weeklyDraft").value = buildWeeklyDraft(weeklyStart);
+  var saved = weeklyReportFor(weeklyStart);
+  $("weeklyFinal").value = saved ? saved.finalText : "";
+  $("weeklySavedLabel").textContent = saved ? "已儲存於 "+new Date(saved.updatedAt).toLocaleString("zh-TW", {hour12:false}) : "這週還沒儲存";
+}
+
+function openWeeklySheet(){
+  $("weeklyOverlay").hidden = false;
+  renderWeeklySheet(true);
+  run(api.listWeekly().then(function(list){
+    weeklyReports = list || [];
+    renderWeeklySheet(true);
+  }));
+}
+function closeWeeklySheet(){ $("weeklyOverlay").hidden = true; }
+
+function saveWeeklyFinal(){
+  var ws = weeklyStart, text = $("weeklyFinal").value;
+  run(api.saveWeekly(ws, text).then(function(saved){
+    weeklyReports = weeklyReports.filter(function(r){ return r.weekStart!==ws; }).concat([saved]);
+    if(ws===weeklyStart) renderWeeklySheet(false);
+    toast("已儲存，下週會接續這份");
+  }));
+}
+
+function copyWeekly(id){
+  copyToClipboard($(id).value).then(function(){ toast("已複製"); }).catch(function(){ toast("複製失敗，請手動選取文字"); });
+}
+
+function bindWeeklyHandlers(){
+  $("weeklyBtn").addEventListener("click", openWeeklySheet);
+  $("weeklyClose").addEventListener("click", closeWeeklySheet);
+  $("weeklyOverlay").addEventListener("click", function(e){ if(e.target===$("weeklyOverlay")) closeWeeklySheet(); });
+  $("weeklyPrev").addEventListener("click", function(){ weeklyStart = addDays(weeklyStart, -7); renderWeeklySheet(true); });
+  $("weeklyNext").addEventListener("click", function(){ weeklyStart = addDays(weeklyStart, 7); renderWeeklySheet(true); });
+  $("weeklyRegen").addEventListener("click", function(){ renderWeeklySheet(true); toast("已依目前任務重新產生"); });
+  $("weeklyCopyDraft").addEventListener("click", function(){ copyWeekly("weeklyDraft"); });
+  $("weeklyCopyFinal").addEventListener("click", function(){ copyWeekly("weeklyFinal"); });
+  $("weeklyUseDraft").addEventListener("click", function(){
+    if($("weeklyFinal").value.trim() && !confirm("要用草稿覆蓋目前的實際上傳版本嗎？")) return;
+    $("weeklyFinal").value = $("weeklyDraft").value;
+  });
+  $("weeklySave").addEventListener("click", saveWeeklyFinal);
+  $("weeklyProjChips").addEventListener("click", function(e){
+    var b = e.target.closest("[data-proj]");
+    if(!b) return;
+    var id = b.getAttribute("data-proj"), list = weeklyExcluded(), i = list.indexOf(id);
+    if(i>-1) list.splice(i,1); else list.push(id);
+    setWeeklyExcluded(list);
+    renderWeeklySheet(true);
+  });
+}
+
 function renderStats(){
   var t = todayStr();
   var open = tasks.filter(function(x){ return x.status!=="done"; });
@@ -932,6 +1097,7 @@ function bindStaticHandlers(){
     renderReportSheet();
   });
   $("reportCopyBtn").addEventListener("click", copyReportSummary);
+  bindWeeklyHandlers();
 
   $("projClose").addEventListener("click", closeProjectModal);
   $("projOverlay").addEventListener("click", function(e){ if(e.target===$("projOverlay")) closeProjectModal(); });

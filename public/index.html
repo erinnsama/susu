@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=20260929">
+<link rel="stylesheet" href="/css/style.css?v=20261008">
 </head>
 <body>
 
@@ -55,6 +55,10 @@
     <button type="button" class="btn-today ghost-today" id="reportBtn">
       <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 3a1 1 0 0 1 1 1v15h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm13.5 3a1 1 0 0 1 1 1v9a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1zm-5 4a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm-5 3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1z" fill="currentColor"/></svg>
       工作回顧
+    </button>
+    <button type="button" class="btn-today ghost-today" id="weeklyBtn">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5zM8 12a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 4a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2H8z" fill="currentColor"/></svg>
+      一周進度
     </button>
     <button type="button" class="btn-today" id="pushToggleBtn" hidden>
       <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 2a1 1 0 0 1 1 1v1.06A7.002 7.002 0 0 1 19 11v3.586l1.707 1.707A1 1 0 0 1 20 18H4a1 1 0 0 1-.707-1.707L5 14.586V11a7.002 7.002 0 0 1 6-6.94V3a1 1 0 0 1 1-1zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z" fill="currentColor"/></svg>
@@ -226,6 +230,38 @@
     <div class="report-section">
       <div class="today-head"><span>詳細項目列表</span><button type="button" class="btn-ghost-inline" id="reportCopyBtn">複製文字摘要</button></div>
       <div id="reportDetailList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- weekly sheet -->
+<div class="overlay" id="weeklyOverlay" hidden>
+  <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="weeklySheetTitle">
+    <button class="close-x" id="weeklyClose" aria-label="關閉">✕</button>
+    <h3 id="weeklySheetTitle">一周進度</h3>
+
+    <div class="weekly-nav">
+      <button type="button" class="today-btn" id="weeklyPrev" aria-label="上一週">‹</button>
+      <span class="mono" id="weeklyRangeLabel"></span>
+      <button type="button" class="today-btn" id="weeklyNext" aria-label="下一週">›</button>
+    </div>
+    <p class="sheet-hint" id="weeklyBaseLabel"></p>
+
+    <div class="report-section">
+      <div class="today-head"><span>納入專案</span></div>
+      <div class="chiprow weekly-proj" id="weeklyProjChips"></div>
+    </div>
+
+    <div class="report-section">
+      <div class="today-head"><span>自動產生草稿</span><span><button type="button" class="btn-ghost-inline" id="weeklyRegen">重新產生</button><button type="button" class="btn-ghost-inline" id="weeklyCopyDraft">複製</button></span></div>
+      <textarea class="weekly-text" id="weeklyDraft" spellcheck="false"></textarea>
+    </div>
+
+    <div class="report-section">
+      <div class="today-head"><span>實際上傳版本</span><span><button type="button" class="btn-ghost-inline" id="weeklyUseDraft">帶入草稿</button><button type="button" class="btn-ghost-inline" id="weeklyCopyFinal">複製</button></span></div>
+      <textarea class="weekly-text" id="weeklyFinal" spellcheck="false" placeholder="貼上實際交給主管的版本，下週會以這份的 [下周進度] 接續"></textarea>
+      <p class="sheet-hint" id="weeklySavedLabel"></p>
+      <div class="sheet-actions"><button type="button" class="btn btn-primary" id="weeklySave">儲存實際上傳版本</button></div>
     </div>
   </div>
 </div>

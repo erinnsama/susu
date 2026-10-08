@@ -3,6 +3,7 @@ import { json } from "./lib/util.js";
 import { handleProjects } from "./api/projects.js";
 import { handleTasks } from "./api/tasks.js";
 import { handlePush } from "./api/push.js";
+import { handleWeekly } from "./api/weekly.js";
 import { taipeiToday, findDueTasks, composeReminderMessage } from "./lib/reminder.js";
 import { sendPushToAll } from "./lib/push-send.js";
 
@@ -68,6 +69,9 @@ async function handleApi(request, env, url) {
   }
   if (url.pathname === "/api/tasks" || url.pathname.startsWith("/api/tasks/")) {
     return handleTasks(request, env, url);
+  }
+  if (url.pathname === "/api/weekly" || url.pathname.startsWith("/api/weekly/")) {
+    return handleWeekly(request, env, url);
   }
   if (url.pathname.startsWith("/api/push/")) {
     return handlePush(request, env, url, auth);

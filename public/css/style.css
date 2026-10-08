@@ -262,6 +262,13 @@ header{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:spa
 .detail-mark-doing{background:var(--status-doing);}
 .detail-mark-todo{background:var(--status-todo);}
 
+/* ---------- 一周進度 ---------- */
+.weekly-nav{display:flex; align-items:center; justify-content:center; gap:14px; font-size:14px; font-weight:700;}
+.weekly-proj{margin:0;}
+.weekly-proj .chip[data-off="1"]{opacity:.4; text-decoration:line-through;}
+.weekly-text{width:100%; box-sizing:border-box; min-height:220px; resize:vertical; border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; font-size:13.5px; line-height:1.6; background:var(--bg); color:var(--text); white-space:pre;}
+.weekly-text:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+
 /* 推播提醒開關：關的時候用素色，開了才用強調色，一眼看出目前狀態 */
 #pushToggleBtn[data-on="0"]{background:var(--surface); color:var(--accent-strong); border-color:var(--border);}
 #pushHint{margin:0;}
