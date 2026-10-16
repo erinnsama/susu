@@ -307,11 +307,11 @@ function render(){
 }
 
 /* ---------- 今日任務 ---------- */
-// 「今日任務」＝截止日是今天且還沒完成的任務，
-// 跟「今天到期」統計、推播提醒共用同一份資料，不會各算各的。
+// 「今日任務」＝截止日是今天或已經過了、且還沒完成的任務。
+// 前幾天沒按完成的不會過了午夜就掉出清單，要她自己按完成／延期／移出才會離開。
 function todayTasks(){
   var t = todayStr();
-  return tasks.filter(function(x){ return x.dueDate===t && x.status!=="done"; });
+  return tasks.filter(function(x){ return x.dueDate && x.dueDate<=t && x.status!=="done"; });
 }
 function renderTodayBadge(){
   $("todayCount").textContent = todayTasks().length;
@@ -336,7 +336,7 @@ function todayRowHtml(t, action){
         '<span class="today-title">'+escapeHtml(t.title)+'</span>'+
         '<span class="today-sub">'+escapeHtml(name)+' · '+statusLabel+
           (t.priority==="high" ? ' · <b class="urgent-text">急</b>' : '')+
-          (action==="add" && t.dueDate ? ' · 原訂 '+t.dueDate.slice(5).replace("-","/") : '')+
+          (t.dueDate && (action==="add" || t.dueDate<todayStr()) ? ' · 原訂 '+t.dueDate.slice(5).replace("-","/") : '')+
         '</span>'+
       '</div>'+
       '<div class="today-actions">'+actions+'</div>'+
@@ -357,7 +357,7 @@ function renderTodaySheet(){
   var keyword = ($("todaySearch").value || "").trim().toLowerCase();
   var pool = sortTasks(tasks.filter(function(x){
     if(x.status==="done") return false;
-    if(x.dueDate===t0) return false;
+    if(x.dueDate && x.dueDate<=t0) return false;
     if(keyword && x.title.toLowerCase().indexOf(keyword)===-1) return false;
     return true;
   }));
