@@ -702,12 +702,17 @@ function findTaskForLine(name, pool){
   })[0] || null;
 }
 
-function buildWeeklyDraft(ws){
-  // 下周進度只抓「接下來 7 天內」到期、還沒完成的任務（含已逾期的）。
-  // 看本週時從今天往後算；切回過去的週就從那週週日往後算，草稿才會跟當時一致。
+function weeklyWindows(ws){
   var we = addDays(ws, 6), t0 = todayStr();
-  var nextLimit = addDays(t0>=ws && t0<=we ? t0 : we, 7);
-  function dueSoon(t){ return t.status!=="done" && t.dueDate && t.dueDate<=nextLimit; }
+  var ref = t0>=ws && t0<=we ? t0 : we;
+  return {ref:ref, thisStart:addDays(ref, -6), nextStart:addDays(ref, 1), nextEnd:addDays(ref, 7)};
+}
+
+function buildWeeklyDraft(ws){
+  // 以「基準日」切兩段：本周＝基準日往前 7 天（含當天），下周＝基準日之後 7 天。
+  // 看本週時基準日是今天；切回過去的週就用那週週日，草稿才會跟當時一致。
+  var win = weeklyWindows(ws), ref = win.ref;
+  function dueSoon(t){ return t.status!=="done" && t.dueDate && t.dueDate>=win.nextStart && t.dueDate<=win.nextEnd; }
   var excluded = weeklyExcluded();
   var pool = tasks.filter(function(t){ return excluded.indexOf(t.projectId||"__none__")===-1; });
   var used = {}, thisWeek = [], nextWeek = [], nextNames = {};
@@ -718,7 +723,7 @@ function buildWeeklyDraft(ws){
     nextNames[k] = 1;
     nextWeek.push(name);
   }
-  function doneBy(t){ return t.status==="done" && t.completedAt && localDateStr(t.completedAt)<=we; }
+  function doneBy(t){ return t.status==="done" && t.completedAt && localDateStr(t.completedAt)<=ref; }
 
   var base = weeklyBaseReport(ws);
   if(base){
@@ -731,10 +736,12 @@ function buildWeeklyDraft(ws){
     });
   }
   pool.filter(function(t){
-    return !used[t.id] && t.completedAt && inRange(localDateStr(t.completedAt), {startStr:ws, endStr:we});
+    return !used[t.id] && t.completedAt && inRange(localDateStr(t.completedAt), {startStr:win.thisStart, endStr:ref});
   }).sort(function(a,b){ return a.completedAt.localeCompare(b.completedAt); })
     .forEach(function(t){ used[t.id] = 1; thisWeek.push(t.title+" [已完成]"); });
-  pool.filter(function(t){ return !used[t.id] && t.status==="doing"; })
+  pool.filter(function(t){
+    return !used[t.id] && t.status!=="done" && (t.status==="doing" || (t.dueDate && t.dueDate>=win.thisStart && t.dueDate<=ref));
+  })
     .forEach(function(t){ used[t.id] = 1; thisWeek.push(t.title+" [進行中]"); });
 
   pool.filter(dueSoon).sort(function(a,b){ return (a.dueDate||"9999").localeCompare(b.dueDate||"9999"); })
@@ -757,9 +764,10 @@ function renderWeeklySheet(regenerate){
   $("weeklyRangeLabel").textContent = weeklyStart.replace(/-/g,"/")+" ～ "+we.slice(5).replace(/-/g,"/");
   $("weeklyNext").disabled = weeklyStart>=mondayOf(todayStr());
   var base = weeklyBaseReport(weeklyStart);
-  $("weeklyBaseLabel").textContent = base
+  var win = weeklyWindows(weeklyStart), md = function(d){ return d.slice(5).replace("-","/"); };
+  $("weeklyBaseLabel").textContent = "本周 "+md(win.thisStart)+"~"+md(win.ref)+" / 下周 "+md(win.nextStart)+"~"+md(win.nextEnd)+" / "+(base
     ? "接續 "+base.weekStart.replace(/-/g,"/")+" 那週的實際上傳版本"
-    : "還沒有之前的實際上傳版本，只依任務狀態產生";
+    : "還沒有之前的實際上傳版本");
   renderWeeklyProjChips();
   if(regenerate) $("weeklyDraft").value = buildWeeklyDraft(weeklyStart);
   var saved = weeklyReportFor(weeklyStart);
