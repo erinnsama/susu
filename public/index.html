@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="preload" href="/fonts/lineseed-eb.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/style.css?v=20261016">
-<link rel="stylesheet" href="/css/sticker.css?v=20261016">
+<link rel="stylesheet" href="/css/sticker.css?v=20261016b">
 </head>
 <body>
 
@@ -62,6 +62,10 @@
       <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5zM8 12a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 4a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2H8z" fill="currentColor"/></svg>
       一周進度
     </button>
+    <button type="button" class="btn-today ghost-today" id="schedBtn">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zM5 9v10h14V9H5zm2 2h4v3H7v-3zm6 0h4v3h-4v-3zm-6 5h4v2H7v-2z" fill="currentColor"/></svg>
+      排程表
+    </button>
     <button type="button" class="btn-today" id="pushToggleBtn" hidden>
       <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 2a1 1 0 0 1 1 1v1.06A7.002 7.002 0 0 1 19 11v3.586l1.707 1.707A1 1 0 0 1 20 18H4a1 1 0 0 1-.707-1.707L5 14.586V11a7.002 7.002 0 0 1 6-6.94V3a1 1 0 0 1 1-1zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z" fill="currentColor"/></svg>
       <span id="pushToggleLabel">開啟推播提醒</span>
@@ -94,6 +98,23 @@
       <div class="cardlist" id="listDone"></div>
       <button class="add-task" data-add="done">＋ 新增任務</button>
     </section>
+  </div>
+</div>
+
+<!-- schedule sheet:放在任務面板前面,點排程裡的任務時任務面板才會疊在上層 -->
+<div class="overlay" id="schedOverlay" hidden>
+  <div class="sheet sheet-xl" role="dialog" aria-modal="true" aria-labelledby="schedSheetTitle">
+    <button class="close-x" id="schedClose" aria-label="關閉">✕</button>
+    <h3 id="schedSheetTitle">排程表</h3>
+    <div class="weekly-nav">
+      <button type="button" class="today-btn" id="schedPrev" aria-label="往前四週">‹</button>
+      <span class="mono" id="schedRangeLabel"></span>
+      <button type="button" class="today-btn" id="schedNext" aria-label="往後四週">›</button>
+      <button type="button" class="btn-ghost-inline" id="schedToday">回到本週</button>
+    </div>
+    <div class="sched-overdue" id="schedOverdue"></div>
+    <div class="sched-head" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+    <div class="sched-grid" id="schedGrid"></div>
   </div>
 </div>
 

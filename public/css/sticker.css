@@ -137,3 +137,44 @@ body *{font-weight:400;}
 }
 @media (max-width:389px){ .brand h1{font-size:22px;} }
 .weekly-nav .today-btn{line-height:0; padding-bottom:2px;}
+
+/* ---------- 排程表 ---------- */
+.sheet-xl{max-width:1040px;}
+@media (min-width:600px){ .sheet-xl{max-height:88vh;} }
+.weekly-nav .btn-ghost-inline{margin-left:4px;}
+.sched-overdue{margin:12px 0 0;}
+.sched-overdue:empty{display:none;}
+.sched-overdue .sched-label{display:inline-block; font-family:var(--f-title); font-weight:800; font-size:12px; color:var(--surface); background:var(--danger); border:var(--line); border-radius:999px; padding:0 10px; margin-bottom:6px;}
+.sched-overdue .sched-items{display:flex; flex-wrap:wrap; gap:6px;}
+.sched-head{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin:14px 0 6px; text-align:center; font-family:var(--f-title); font-weight:800; font-size:12.5px;}
+.sched-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px;}
+.sched-day{min-height:92px; background:var(--surface); border:var(--line); border-radius:12px; padding:5px; display:flex; flex-direction:column; gap:4px; min-width:0;}
+.sched-day.weekend{background:color-mix(in srgb, var(--surface-2) 60%, var(--surface));}
+.sched-day.past{opacity:.6;}
+.sched-day.today{background:var(--sun-soft); box-shadow:var(--pop);}
+.sched-date{font-family:var(--f-title); font-weight:800; font-size:12px; display:flex; justify-content:space-between; align-items:center;}
+.sched-date .wk{display:none;}
+.sched-day.today .sched-date .d{background:var(--accent); color:var(--on-accent); border:1.5px solid var(--ink); border-radius:999px; padding:0 7px;}
+.sched-list{display:flex; flex-direction:column; gap:4px; min-width:0;}
+.sched-item{display:flex; align-items:flex-start; gap:4px; width:100%; text-align:left; border:1.5px solid var(--ink); border-radius:8px; background:var(--surface); padding:3px 5px; font-size:11.5px; line-height:1.35; color:var(--ink);}
+.sched-item .dot{width:8px; height:8px; border-radius:50%; flex:none; margin-top:3px; border:1px solid var(--ink);}
+.sched-item .t{min-width:0; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; word-break:break-word;}
+.sched-item.doing{background:color-mix(in srgb, var(--status-doing) 16%, var(--surface));}
+.sched-item.done{opacity:.55; text-decoration:line-through;}
+.sched-item.high{box-shadow:inset 3px 0 0 var(--danger);}
+.sched-overdue .sched-item{width:auto; max-width:100%;}
+@media (hover:hover){ .sched-item:hover{background:var(--accent-soft);} }
+/* 手機:改成依日期往下排的清單,沒任務的日子收起來(今天保留) */
+@media (max-width:719px){
+  .sched-head{display:none;}
+  .sched-grid{display:flex; flex-direction:column; gap:8px; margin-top:12px;}
+  .sched-day{min-height:0; flex-direction:row; align-items:flex-start; gap:10px; padding:8px 10px;}
+  .sched-day.empty:not(.today){display:none;}
+  .sched-day.past{opacity:.7;}
+  .sched-date{flex:none; width:58px;}
+  .sched-date .d{display:none;}
+  .sched-date .wk{display:block;}
+  .sched-day.today .sched-date .wk{color:var(--accent-strong);}
+  .sched-list{flex:1; gap:5px;}
+  .sched-item{font-size:13px;}
+}

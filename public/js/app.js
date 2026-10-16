@@ -304,6 +304,7 @@ function render(){
   renderTodayBadge();
   if(!$("todayOverlay").hidden) renderTodaySheet();
   if(!$("reportOverlay").hidden) renderReportSheet();
+  if(!$("schedOverlay").hidden) renderScheduleSheet();
 }
 
 /* ---------- 今日任務 ---------- */
@@ -702,7 +703,11 @@ function findTaskForLine(name, pool){
 }
 
 function buildWeeklyDraft(ws){
-  var we = addDays(ws, 6), nextEnd = addDays(ws, 13);
+  // 下周進度只抓「接下來 7 天內」到期、還沒完成的任務（含已逾期的）。
+  // 看本週時從今天往後算；切回過去的週就從那週週日往後算，草稿才會跟當時一致。
+  var we = addDays(ws, 6), t0 = todayStr();
+  var nextLimit = addDays(t0>=ws && t0<=we ? t0 : we, 7);
+  function dueSoon(t){ return t.status!=="done" && t.dueDate && t.dueDate<=nextLimit; }
   var excluded = weeklyExcluded();
   var pool = tasks.filter(function(t){ return excluded.indexOf(t.projectId||"__none__")===-1; });
   var used = {}, thisWeek = [], nextWeek = [], nextNames = {};
@@ -722,7 +727,7 @@ function buildWeeklyDraft(ws){
       if(t) used[t.id] = 1;
       var finished = t && doneBy(t);
       thisWeek.push(name+(finished ? " [已完成]" : " [進行中]"));
-      if(!finished) pushNext(name, t);
+      if(t && dueSoon(t)) pushNext(name, t);
     });
   }
   pool.filter(function(t){
@@ -732,9 +737,7 @@ function buildWeeklyDraft(ws){
   pool.filter(function(t){ return !used[t.id] && t.status==="doing"; })
     .forEach(function(t){ used[t.id] = 1; thisWeek.push(t.title+" [進行中]"); });
 
-  pool.filter(function(t){
-    return t.status==="doing" || (t.status==="todo" && t.dueDate && t.dueDate<=nextEnd);
-  }).sort(function(a,b){ return (a.dueDate||"9999").localeCompare(b.dueDate||"9999"); })
+  pool.filter(dueSoon).sort(function(a,b){ return (a.dueDate||"9999").localeCompare(b.dueDate||"9999"); })
     .forEach(function(t){ pushNext(t.title, t); });
 
   return "[本周進度]\n"+thisWeek.join("\n")+"\n[下周進度]\n"+nextWeek.join("\n")+"\n";
@@ -809,6 +812,61 @@ function bindWeeklyHandlers(){
     setWeeklyExcluded(list);
     renderWeeklySheet(true);
   });
+}
+
+/* ---------- 排程表 ---------- */
+// 從選定週的週一開始排四週,任務放在截止日那天;比這段更早、還沒完成的另外列在「已逾期」。
+var schedStart = mondayOf(todayStr());
+var SCHED_WEEKS = 4;
+var WEEKDAY = ["日","一","二","三","四","五","六"];
+
+function schedItemHtml(t){
+  var p = projectById(t.projectId);
+  var cls = "sched-item "+t.status+(t.priority==="high" ? " high" : "");
+  return '<button type="button" class="'+cls+'" data-sched-open="'+t.id+'" title="'+escapeHtml(t.title)+'">'+
+    '<span class="dot" style="background:'+(p ? p.color : "#8C93A6")+'"></span><span class="t">'+escapeHtml(t.title)+'</span></button>';
+}
+function renderScheduleSheet(){
+  var t0 = todayStr(), end = addDays(schedStart, SCHED_WEEKS*7-1);
+  $("schedRangeLabel").textContent = schedStart.replace(/-/g,"/")+" ～ "+end.slice(5).replace(/-/g,"/");
+  var byDate = {};
+  tasks.forEach(function(t){
+    if(t.dueDate && t.dueDate>=schedStart && t.dueDate<=end) (byDate[t.dueDate] = byDate[t.dueDate] || []).push(t);
+  });
+  var overdue = sortTasks(tasks.filter(function(t){ return t.status!=="done" && t.dueDate && t.dueDate<t0 && t.dueDate<schedStart; }));
+  $("schedOverdue").innerHTML = overdue.length
+    ? '<span class="sched-label">已逾期 '+overdue.length+'</span><div class="sched-items">'+overdue.map(schedItemHtml).join("")+'</div>'
+    : "";
+  var rank = {doing:0, todo:1, done:2};
+  var html = "";
+  for(var i=0; i<SCHED_WEEKS*7; i++){
+    var ds = addDays(schedStart, i), d = new Date(ds+"T00:00:00");
+    var list = (byDate[ds] || []).slice().sort(function(a,b){
+      return rank[a.status]-rank[b.status] || PRIORITY_RANK[a.priority]-PRIORITY_RANK[b.priority];
+    });
+    var cls = "sched-day"+(ds===t0 ? " today" : "")+(ds<t0 ? " past" : "")+(d.getDay()%6===0 ? " weekend" : "")+(list.length ? "" : " empty");
+    html += '<div class="'+cls+'"><div class="sched-date"><span class="d">'+(d.getDate()===1 || i===0 ? (d.getMonth()+1)+"/"+d.getDate() : d.getDate())+'</span>'+
+      '<span class="wk">'+(d.getMonth()+1)+'/'+d.getDate()+' ('+WEEKDAY[d.getDay()]+')</span></div>'+
+      '<div class="sched-list">'+list.map(schedItemHtml).join("")+'</div></div>';
+  }
+  $("schedGrid").innerHTML = html;
+}
+function openScheduleSheet(){
+  renderScheduleSheet();
+  $("schedOverlay").hidden = false;
+}
+function closeScheduleSheet(){ $("schedOverlay").hidden = true; }
+function bindScheduleHandlers(){
+  $("schedBtn").addEventListener("click", openScheduleSheet);
+  $("schedClose").addEventListener("click", closeScheduleSheet);
+  $("schedOverlay").addEventListener("click", function(e){
+    if(e.target===$("schedOverlay")) return closeScheduleSheet();
+    var b = e.target.closest("[data-sched-open]");
+    if(b) openTaskSheet(b.getAttribute("data-sched-open"));
+  });
+  $("schedPrev").addEventListener("click", function(){ schedStart = addDays(schedStart, -SCHED_WEEKS*7); renderScheduleSheet(); });
+  $("schedNext").addEventListener("click", function(){ schedStart = addDays(schedStart, SCHED_WEEKS*7); renderScheduleSheet(); });
+  $("schedToday").addEventListener("click", function(){ schedStart = mondayOf(todayStr()); renderScheduleSheet(); });
 }
 
 function renderStats(){
@@ -1098,6 +1156,7 @@ function bindStaticHandlers(){
   });
   $("reportCopyBtn").addEventListener("click", copyReportSummary);
   bindWeeklyHandlers();
+  bindScheduleHandlers();
 
   $("projClose").addEventListener("click", closeProjectModal);
   $("projOverlay").addEventListener("click", function(e){ if(e.target===$("projOverlay")) closeProjectModal(); });
