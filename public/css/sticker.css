@@ -1,0 +1,139 @@
+/* EMO 手繪貼紙風(粉色):疊在 style.css 之後載入,只覆寫外觀,不動版面邏輯。
+   淡粉點點紙面+白色貼紙卡(深莓紫粗描邊+錯位陰影)。標題 LINE Seed 最粗,其餘 JF 粉圓。
+   粉圓只有一種字重,內文一律 400,避免瀏覽器合成粗體糊掉。 */
+@font-face{font-family:'LINE Seed TW'; src:url('/fonts/lineseed-eb.woff2') format('woff2'); font-weight:100 900; font-display:swap;}
+@font-face{font-family:'jf-openhuninn'; src:url('/fonts/jf-openhuninn.woff2') format('woff2'); font-weight:100 900; font-display:swap;}
+
+:root{
+  --ink:#3B1630;
+  --bg:#FFF2F7;
+  --surface:#FFFFFF;
+  --surface-2:#FFE6EF;
+  --surface-3:#FFD3E3;
+  --border:var(--ink);
+  --text:#3B1630;
+  --text-muted:#86607A;
+  --accent:#FF6FA3;
+  --accent-strong:#D63F7A;
+  --accent-soft:#FFDCEA;
+  --on-accent:#FFFFFF;
+  --sun:#FFC94D;
+  --sun-soft:#FFF1C9;
+  --status-todo:#9A8CB8;
+  --status-doing:#5B9BFF;
+  --status-done:#3FB58A;
+  --danger:#E5484D;
+  --line:2px solid var(--ink);
+  --pop:3px 3px 0 var(--ink);
+  --pop-lg:5px 5px 0 var(--ink);
+  --shadow:var(--pop);
+  --radius-lg:22px;
+  --radius-md:16px;
+  --radius-sm:12px;
+  --f-title:'LINE Seed TW','Noto Sans TC',system-ui,sans-serif;
+  --f-body:'jf-openhuninn','Noto Sans TC',system-ui,-apple-system,sans-serif;
+}
+
+body{font-family:var(--f-body); line-height:1.5; background-color:var(--bg);
+  background-image:radial-gradient(color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1.3px);
+  background-size:22px 22px;}
+body *{font-weight:400;}
+:focus-visible{outline:3px solid var(--sun); outline-offset:2px;}
+
+/* 標題類:LINE Seed 最粗 */
+.brand h1, .brand .eyebrow, .col-head h2, .col-head .eyebrow, .sheet h3, .stat .n,
+.today-head > span:first-child, .detail-name, .btn-today, .btn-primary, .tabs button{font-family:var(--f-title); font-weight:800;}
+
+/* 頁首:白字+粗描邊+粉色錯位,像貼紙標題 */
+.brand h1{font-size:34px; letter-spacing:.02em; color:var(--surface); -webkit-text-stroke:4px var(--ink); paint-order:stroke fill; text-shadow:3px 3px 0 var(--accent);}
+.brand h1 .bell{color:var(--sun); filter:drop-shadow(2px 2px 0 var(--ink));}
+.brand .eyebrow{display:inline-block; align-self:flex-start; font-size:11px; letter-spacing:.14em; color:var(--ink); background:var(--sun); border:var(--line); border-radius:999px; padding:1px 10px; margin-bottom:6px;}
+.brand .today{color:var(--ink);}
+
+/* 貼紙卡共通 */
+.stat, .card, .column, .chip, .userchip, .today-row, .detail-item, .toast, .tabs{border:var(--line); box-shadow:var(--pop);}
+
+.stat{border-radius:var(--radius-md); background:var(--surface);}
+.stat .n{font-size:26px; line-height:1.15; font-variant-numeric:tabular-nums;}
+.stat .l{color:var(--ink); font-size:12px;}
+.stat.accent{background:var(--accent-soft);}
+.stat.danger{background:#FFE1E1;}
+.stat[data-active="1"]{background:var(--sun); border-color:var(--ink); box-shadow:var(--pop);}
+
+.chiprow{padding:2px 4px 6px 2px;}
+.chip{background:var(--surface); color:var(--ink); box-shadow:2px 2px 0 var(--ink);}
+.chip .dot, .card-top .dot, .today-row .dot, .detail-head .dot, .bar-row .dot{width:10px; height:10px; border:1.5px solid var(--ink);}
+.chip[data-active="1"]{background:var(--accent); color:var(--on-accent); border-color:var(--ink);}
+.chip[data-active="1"] .count{color:var(--on-accent);}
+.chip.ghost{border-style:dashed; box-shadow:none; color:var(--ink);}
+
+.tabs{background:var(--surface);}
+.tabs button{color:var(--ink);}
+.tabs button[data-current="1"]{background:var(--accent); color:var(--on-accent); box-shadow:none;}
+
+/* 看板欄 */
+.column{background:color-mix(in srgb, var(--surface) 72%, transparent); border-radius:var(--radius-lg); box-shadow:var(--pop-lg);}
+.col-head h2{font-size:18px;}
+.col-head h2::before{content:""; display:inline-block; width:12px; height:12px; border:var(--line); border-radius:50%; margin-right:7px; vertical-align:0;}
+.column[data-status="todo"] .col-head h2::before{background:var(--status-todo);}
+.column[data-status="doing"] .col-head h2::before{background:var(--status-doing);}
+.column[data-status="done"] .col-head h2::before{background:var(--status-done);}
+.col-head .eyebrow{color:var(--text-muted);}
+.col-head .badge{border:var(--line); color:var(--ink); background:var(--sun);}
+.empty-slot, .add-task{border:2px dashed color-mix(in srgb, var(--ink) 45%, transparent); color:var(--ink);}
+
+/* 任務卡 */
+.card{border-radius:var(--radius-md);}
+.card-title{font-size:15px; color:var(--ink);}
+.card-top .proj{color:var(--text-muted);}
+.card-top .urgent{color:var(--surface); background:var(--danger); border:1.5px solid var(--ink); border-radius:999px;}
+.movebtns button{border:var(--line); background:var(--surface); color:var(--ink); border-radius:999px; box-shadow:1.5px 1.5px 0 var(--ink);}
+
+/* 按鈕 */
+.btn-today{border:var(--line); background:var(--accent); color:var(--on-accent); box-shadow:var(--pop);}
+.btn-today .badge{background:var(--sun); color:var(--ink); border:1.5px solid var(--ink);}
+.ghost-today, #pushToggleBtn[data-on="0"]{background:var(--surface); color:var(--ink); border-color:var(--ink);}
+.btn{border:var(--line);}
+.btn-primary{box-shadow:var(--pop);}
+.btn-ghost{background:var(--surface); color:var(--ink); border-color:var(--ink);}
+.btn-danger{border-color:transparent;}
+.btn-today:active, .btn:active, .chip:active, .stat:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+
+/* 面板 */
+.overlay{background:rgba(59,22,48,.45);}
+.sheet{border:var(--line); box-shadow:var(--pop-lg);}
+@media (max-width:599px){ .sheet{border-bottom:none; box-shadow:none;} }
+.sheet h3{font-size:22px;}
+.close-x{width:32px; height:32px; top:12px; right:12px; border:var(--line); border-radius:50%; background:var(--sun); color:var(--ink); font-size:14px; box-shadow:2px 2px 0 var(--ink);}
+.field label, .today-head{color:var(--ink);}
+.field input[type="text"], .field input[type="date"], .field input[type="url"], .field select, .field textarea,
+#todaySearch, .weekly-text, .report-custom-range input[type="date"], .add-proj-row input[type="text"]{border:var(--line); background:var(--surface); color:var(--ink);}
+.field input[type="url"]{border-radius:var(--radius-sm); padding:10px 12px; font-size:14.5px; width:100%;}
+.seg button{border:var(--line); background:var(--surface); color:var(--ink);}
+.seg button[data-on="1"]{background:var(--accent); color:var(--on-accent); border-color:var(--ink); box-shadow:2px 2px 0 var(--ink);}
+
+.today-row, .detail-item{border-radius:var(--radius-md);}
+.today-btn{border:var(--line); background:var(--surface); color:var(--ink); border-radius:999px;}
+.today-head .badge{background:var(--sun); border:1.5px solid var(--ink); color:var(--ink);}
+.bar-row .bar-track, .priority-bar, .trend-track{border:1.5px solid var(--ink); background:var(--surface);}
+.detail-mark{border:1.5px solid var(--ink); border-radius:999px;}
+.userchip{color:var(--ink); box-shadow:2px 2px 0 var(--ink);}
+.userchip .logout{border-left:1.5px solid var(--ink);}
+.toast{color:var(--ink); background:var(--sun-soft);}
+.proj-row{border-bottom:1.5px dashed color-mix(in srgb, var(--ink) 35%, transparent);}
+.add-proj{border-top:1.5px dashed color-mix(in srgb, var(--ink) 35%, transparent);}
+
+@media (hover:hover){
+  .card:hover, .stat:hover, .chip:hover{border-color:var(--ink);}
+  .card:hover{box-shadow:4px 4px 0 var(--accent-strong);}
+  .btn-today:hover{background:var(--accent-strong); border-color:var(--ink);}
+  .ghost-today:hover, #pushToggleBtn[data-on="0"]:hover{background:var(--accent-soft); border-color:var(--ink); color:var(--ink);}
+  .add-task:hover{border-color:var(--accent-strong); color:var(--accent-strong); background:var(--surface);}
+}
+@media (max-width:719px){
+  .brand h1{font-size:26px; -webkit-text-stroke-width:3.5px; text-shadow:2px 2px 0 var(--accent);}
+  .board{scroll-padding-inline:16px; padding-bottom:6px;}
+  .column{box-shadow:var(--pop);}
+}
+@media (max-width:389px){ .brand h1{font-size:22px;} }
+.weekly-nav .today-btn{line-height:0; padding-bottom:2px;}
