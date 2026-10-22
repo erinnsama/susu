@@ -45,7 +45,7 @@ body *{font-weight:400;}
 .today-head > span:first-child, .detail-name, .btn-today, .btn-primary, .tabs button{font-family:var(--f-title); font-weight:800;}
 
 /* 頁首:白字+粗描邊+粉色錯位,像貼紙標題 */
-.brand h1{font-size:34px; letter-spacing:.02em; color:var(--surface); -webkit-text-stroke:4px var(--ink); paint-order:stroke fill; text-shadow:3px 3px 0 var(--accent);}
+.brand h1{font-size:34px; letter-spacing:.02em; color:var(--surface); -webkit-text-stroke:4px var(--ink); paint-order:stroke fill;}
 .brand h1 .bell{color:var(--sun); filter:drop-shadow(2px 2px 0 var(--ink));}
 .brand .eyebrow{display:inline-block; align-self:flex-start; font-size:11px; letter-spacing:.14em; color:var(--ink); background:var(--sun); border:var(--line); border-radius:999px; padding:1px 10px; margin-bottom:6px;}
 .brand .today{color:var(--ink);}
@@ -131,7 +131,7 @@ body *{font-weight:400;}
   .add-task:hover{border-color:var(--accent-strong); color:var(--accent-strong); background:var(--surface);}
 }
 @media (max-width:719px){
-  .brand h1{font-size:26px; -webkit-text-stroke-width:3.5px; text-shadow:2px 2px 0 var(--accent);}
+  .brand h1{font-size:26px; -webkit-text-stroke-width:3.5px;}
   .board{scroll-padding-inline:16px; padding-bottom:6px;}
   .column{box-shadow:var(--pop);}
 }
