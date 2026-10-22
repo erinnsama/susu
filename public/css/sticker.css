@@ -112,7 +112,7 @@ body *{font-weight:400;}
 .seg button{border:var(--line); background:var(--surface); color:var(--ink);}
 .seg button[data-on="1"]{background:var(--accent); color:var(--on-accent); border-color:var(--ink); box-shadow:2px 2px 0 var(--ink);}
 
-.today-row, .detail-item{border-radius:var(--radius-md);}
+.today-row, .detail-item{border-radius:var(--radius-md); box-shadow:none;}
 .today-btn{border:var(--line); background:var(--surface); color:var(--ink); border-radius:999px;}
 .today-head .badge{background:var(--sun); border:1.5px solid var(--ink); color:var(--ink);}
 .bar-row .bar-track, .priority-bar, .trend-track{border:1.5px solid var(--ink); background:var(--surface);}
