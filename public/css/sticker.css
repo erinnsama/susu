@@ -1,8 +1,8 @@
 /* EMO 手繪貼紙風(粉色):疊在 style.css 之後載入,只覆寫外觀,不動版面邏輯。
-   淡粉點點紙面+白色貼紙卡(深莓紫粗描邊+錯位陰影)。標題 LINE Seed 最粗,其餘 JF 粉圓。
-   粉圓只有一種字重,內文一律 400,避免瀏覽器合成粗體糊掉。 */
-@font-face{font-family:'LINE Seed TW'; src:url('/fonts/lineseed-eb.woff2') format('woff2'); font-weight:100 900; font-display:swap;}
-@font-face{font-family:'jf-openhuninn'; src:url('/fonts/jf-openhuninn.woff2') format('woff2'); font-weight:100 900; font-display:swap;}
+   淡粉點點紙面+白色貼紙卡(深莓紫粗描邊+錯位陰影)。標題 LINE Seed 最粗(Eb),內文 LINE Seed 細體。
+   內文只載一個字重,一律 400,避免瀏覽器合成粗體糊掉。 */
+@font-face{font-family:'LINE Seed TW Eb'; src:url('/fonts/lineseed-eb.woff2') format('woff2'); font-weight:100 900; font-display:swap;}
+@font-face{font-family:'LINE Seed TW Body'; src:url('/fonts/lineseed-rg.woff2') format('woff2'); font-weight:100 900; font-display:swap;}
 
 :root{
   --ink:#3B1630;
@@ -30,8 +30,8 @@
   --radius-lg:22px;
   --radius-md:16px;
   --radius-sm:12px;
-  --f-title:'LINE Seed TW','Noto Sans TC',system-ui,sans-serif;
-  --f-body:'jf-openhuninn','Noto Sans TC',system-ui,-apple-system,sans-serif;
+  --f-title:'LINE Seed TW Eb','Noto Sans TC',system-ui,sans-serif;
+  --f-body:'LINE Seed TW Body','Noto Sans TC',system-ui,-apple-system,sans-serif;
 }
 
 body{font-family:var(--f-body); line-height:1.5; background-color:var(--bg);
@@ -178,3 +178,9 @@ body *{font-weight:400;}
   .sched-list{flex:1; gap:5px;}
   .sched-item{font-size:13px;}
 }
+
+/* 今日任務:改日期按鈕。透明的 date input 蓋在按鈕上,點下去直接開系統的日期選擇器(iOS 也能用) */
+.today-btn.reschedule{position:relative; overflow:hidden; color:var(--accent-strong);}
+.today-btn.reschedule input[type="date"]{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; border:0; padding:0; margin:0;}
+.today-btn.reschedule input[type="date"]::-webkit-calendar-picker-indicator{position:absolute; inset:0; width:100%; height:100%; cursor:pointer;}
+@media (hover:hover){ .today-btn.reschedule:hover{background:var(--accent-soft);} }

@@ -328,6 +328,10 @@ function todayRowHtml(t, action){
     : (
         '<button type="button" class="today-btn done" data-done-today="'+t.id+'" aria-label="標記已完成">✓</button>'+
         '<button type="button" class="today-btn postpone" data-postpone-today="'+t.id+'" aria-label="延到明天">→</button>'+
+        '<label class="today-btn reschedule" aria-label="改日期" title="改日期">'+
+          '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zm12 7H5v10h14V9z" fill="currentColor"/></svg>'+
+          '<input type="date" data-reschedule-today="'+t.id+'" value="'+escapeHtml(t.dueDate||"")+'">'+
+        '</label>'+
         '<button type="button" class="today-btn remove" data-remove-today="'+t.id+'" aria-label="移出今日任務">－</button>'
       );
   return (
@@ -379,6 +383,16 @@ function renderTodaySheet(){
   $("todayList").querySelectorAll("[data-postpone-today]").forEach(function(btn){
     btn.addEventListener("click", function(){
       store.updateTask(btn.getAttribute("data-postpone-today"), {dueDate:tomorrowStr()}).then(renderTodaySheet);
+    });
+  });
+  // 改日期:選好新日期就直接存;選到今天以後的日期,任務會離開今日清單,回到看板上的新日期。
+  $("todayList").querySelectorAll("[data-reschedule-today]").forEach(function(input){
+    input.addEventListener("change", function(){
+      if(!input.value) return;
+      store.updateTask(input.getAttribute("data-reschedule-today"), {dueDate:input.value}).then(function(){
+        renderTodaySheet();
+        toast("已改到 "+input.value.slice(5).replace("-","/"));
+      });
     });
   });
   $("todayPool").querySelectorAll("[data-add-today]").forEach(function(btn){
