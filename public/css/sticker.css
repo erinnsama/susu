@@ -83,7 +83,7 @@ body *{font-weight:400;}
 .empty-slot, .add-task{border:2px dashed color-mix(in srgb, var(--ink) 45%, transparent); color:var(--ink);}
 
 /* 任務卡 */
-.card{border-radius:var(--radius-md);}
+.card{border-radius:var(--radius-md); box-shadow:none;}
 .card-title{font-size:15px; color:var(--ink);}
 .card-top .proj{color:var(--text-muted);}
 .card-top .urgent{color:var(--surface); background:var(--danger); border:1.5px solid var(--ink); border-radius:999px;}
@@ -125,7 +125,7 @@ body *{font-weight:400;}
 
 @media (hover:hover){
   .card:hover, .stat:hover, .chip:hover{border-color:var(--ink);}
-  .card:hover{box-shadow:4px 4px 0 var(--accent-strong);}
+  .card:hover{border-color:var(--accent-strong); box-shadow:none;}
   .btn-today:hover{background:var(--accent-strong); border-color:var(--ink);}
   .ghost-today:hover, #pushToggleBtn[data-on="0"]:hover{background:var(--accent-soft); border-color:var(--ink); color:var(--ink);}
   .add-task:hover{border-color:var(--accent-strong); color:var(--accent-strong); background:var(--surface);}
